@@ -26,10 +26,6 @@ struct RecentsView: View {
                             .font(.body.weight(.semibold))
                             .foregroundStyle(e.type == 3 ? .red : .primary)
                         HStack(spacing: 6) {
-                            if let sim = model.simName(e.sub) {
-                                Text(sim).font(.caption2).padding(.horizontal, 5)
-                                    .background(Color(.tertiarySystemFill), in: Capsule())
-                            }
                             if e.dur > 0 { Text(Duration.seconds(e.dur).formatted(.time(pattern: .minuteSecond))) }
                         }
                         .font(.caption).foregroundStyle(.secondary)
@@ -122,7 +118,6 @@ struct KeypadView: View {
     @Environment(\.router) private var router
     @State private var number = ""
     @State private var longPressedZero = false
-    @State private var sub: Int?
 
     private let keys: [[(String, String)]] = [
         [("1", ""), ("2", "ABC"), ("3", "DEF")],
@@ -152,7 +147,6 @@ struct KeypadView: View {
                     Label("Paste", systemImage: "doc.on.clipboard").font(.caption)
                 }
             }
-            SimPicker(sub: $sub)
             VStack(spacing: 14) {
                 ForEach(keys.indices, id: \.self) { r in
                     HStack(spacing: 26) {
@@ -175,7 +169,7 @@ struct KeypadView: View {
             .environment(\.layoutDirection, .leftToRight)
             HStack(spacing: 26) {
                 Color.clear.frame(width: 78, height: 78)
-                Button { model.dial(number, sub: sub) } label: {
+                Button { model.dial(number, sub: nil) } label: {
                     Image(systemName: "phone.fill").font(.system(size: 30)).foregroundStyle(.white).accessibilityLabel(Text("Call"))
                         .frame(width: 78, height: 78).background(.green, in: Circle())
                 }
@@ -189,7 +183,6 @@ struct KeypadView: View {
             Spacer()
         }
         .onAppear {
-            if sub == nil { sub = model.status?.defaultSub }
             #if DEBUG
             // -TetherDemoKeypad <digits>: a typed number, to check the as-you-type grouping.
             let args = ProcessInfo.processInfo.arguments

@@ -152,9 +152,6 @@ struct ConversationRow: View {
                 }
                 Text(MessageText.plain(conversation.last.body)).font(.subheadline).foregroundStyle(.secondary).lineLimit(2)
                     .frame(maxWidth: .infinity, minHeight: 36, alignment: .topLeading)
-                if let sim = model.simName(conversation.last.sub) {
-                    Label(sim, systemImage: "simcard").font(.caption2).foregroundStyle(.secondary).labelStyle(.titleAndIcon)
-                }
             }
         }
         .padding(.vertical, 2)
@@ -192,11 +189,8 @@ struct ThreadView: View {
             let prev = i > 0 ? msgs[i - 1] : nil
             let next = i + 1 < msgs.count ? msgs[i + 1] : nil
             let gap: Int64 = 15 * 60_000
-            // With two SIMs the line above a run says which SIM it is on, and a change of SIM starts a new run.
-            let sim = model.simName(m.sub)
-            let simChanged = sim != nil && prev != nil && prev!.sub != m.sub
-            let header = (prev == nil || m.date - prev!.date > gap || simChanged)
-                ? transcriptTime(m.date) + (sim.map { " · \($0)" } ?? "") : nil
+            let header = (prev == nil || m.date - prev!.date > gap)
+                ? transcriptTime(m.date) : nil
             let tail = next == nil || next!.incoming != m.incoming || next!.date - m.date > gap
             var status: String?
             if m.box == 5 { status = L10n.string("Not Delivered") }
