@@ -3,11 +3,14 @@ import Perception
 import SwiftUI
 import TetherCore
 
-struct LinkView: View {
+/// The fifth tab: a calm Settings page — connection status, language, pairing and About up front;
+/// everything technical (signing/expiry, phone details, VPN, logs…) sits under Advanced at the bottom.
+struct SettingsView: View {
     @Environment(\.appModel) private var model
     @EnvironmentObject private var languageSettings: LanguageSettings
     @State private var scanning = false
     @State private var confirmUnpair = false
+    @State private var showAdvanced = false
 
     var body: some View { WithPerceptionTracking { bodyContent } }
 
@@ -40,6 +43,39 @@ struct LinkView: View {
                     }
                 }
 
+                Section {
+                    Button(model.isPaired ? "Pair again" : "Pair with Android phone") { scanning = true }
+                    if model.isPaired {
+                        Button("Unpair", role: .destructive) { confirmUnpair = true }
+                    }
+                } footer: {
+                    Text("On the Android phone, open Tether and tap Pair iPhone, then scan the code (or paste it). Calls, messages, contacts and call history stay between your devices; there is no server.")
+                }
+
+                Section {
+                    Text(verbatim: "Anti Registry Isf").font(.headline)
+                    LabeledContent("Developer", value: "Amirmohammad Yavari")
+                    LabeledContent("Version", value: appVersion)
+                } header: {
+                    Text("About")
+                }
+
+                Section {
+                    Button {
+                        withAnimation { showAdvanced.toggle() }
+                    } label: {
+                        HStack {
+                            Label("Advanced", systemImage: "gearshape.2")
+                            Spacer()
+                            Image(systemName: showAdvanced ? "chevron.down" : "chevron.right")
+                                .font(.footnote.weight(.semibold))
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    .foregroundStyle(.primary)
+                }
+
+                if showAdvanced {
                 Section {
                     Label {
                         Text("Tether keeps the link in the background and when the screen is locked. Swiping Tether away in the app switcher stops it until you open it again: iOS does not relaunch a force-quit app for Bluetooth.")
@@ -199,16 +235,11 @@ struct LinkView: View {
                     }
                     Button("Sync everything again") { model.requestSync(full: true) }.disabled(!model.linkState.isConnected)
                     NavigationLink("Link log") { LinkLogView() }
-                    Button(model.isPaired ? "Pair again" : "Pair with Android phone") { scanning = true }
-                    if model.isPaired {
-                        Button("Unpair", role: .destructive) { confirmUnpair = true }
-                    }
-                } footer: {
-                    Text("On the Android phone, open Tether and tap Pair iPhone, then scan the code (or paste it). Calls, messages, contacts and call history stay between your devices; there is no server.")
                 }
                 #if DEBUG
                 DeveloperSection()
                 #endif
+                }
             }
             #if DEBUG
             // -TetherDemoVPN: start scrolled to the VPN section (screenshots).
@@ -217,18 +248,20 @@ struct LinkView: View {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { scanning = true }
                 }
                 if ProcessInfo.processInfo.arguments.contains("-TetherDemoPhoneTools") {
+                    showAdvanced = true
                     DispatchQueue.main.asyncAfter(deadline: .now() + 1) { scroller.scrollTo("phonetools", anchor: .top) }
                 }
                 if ProcessInfo.processInfo.arguments.contains("-TetherDemoVPN") {
+                    showAdvanced = true
                     DispatchQueue.main.asyncAfter(deadline: .now() + 1) { scroller.scrollTo("vpn", anchor: .top) }
                 }
             }
             #endif
             }
-            .navigationTitle("Link")
+            .navigationTitle("Settings")
             .onAppear { model.refreshNet() }
             .onChangeCompat(of: model.linkState.isConnected) { up in if up { model.refreshNet() } }
-            // Full screen: nothing of the Link tab shows around or behind the camera.
+            // Full screen: nothing of the Settings tab shows around or behind the camera.
             .fullScreenCover(isPresented: $scanning) {
                 PairingView { code in
                     scanning = false
@@ -242,6 +275,10 @@ struct LinkView: View {
                 Button("Unpair", role: .destructive) { model.unpair() }
             }
         }
+    }
+
+    private var appVersion: String {
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
     }
 
     private var stateLine: String {
@@ -499,7 +536,7 @@ enum CallAudioRows {
     }
 }
 
-/// Link tab › Phone tools: carrier codes (balance etc.) on a SIM, "find my phone" and the ringer mode. Each part shows
+/// Settings › Advanced › Phone tools: carrier codes (balance etc.) on a SIM, "find my phone" and the ringer mode. Each part shows
 /// only when the Android phone's status says it can (older Android builds of Tether do not say: the section is hidden).
 struct PhoneToolsSection: View {
     @Environment(\.appModel) private var model

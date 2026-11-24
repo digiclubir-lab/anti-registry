@@ -71,7 +71,7 @@ extension AppModel {
             else if args.contains("-TetherDemoContacts") { Router.shared.tab = .contacts }
             else if args.contains("-TetherDemoKeypad") { Router.shared.tab = .keypad }
             else if args.contains("-TetherDemoRecents") { Router.shared.tab = .recents }
-            else if args.contains("-TetherDemoPair") || args.contains("-TetherDemoPairManual") || args.contains("-TetherDemoPhoneTools") { Router.shared.tab = .link }
+            else if args.contains("-TetherDemoPair") || args.contains("-TetherDemoPairManual") || args.contains("-TetherDemoPhoneTools") { Router.shared.tab = .settings }
         }
         // -TetherDemoOpen <url> opens a link as if another app had (tel:, tether://dial?number=…); with
         // -TetherDemoOpenCancel the question is cancelled after 3 s, which leaves the number in the Keypad.

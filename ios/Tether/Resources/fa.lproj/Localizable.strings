@@ -55,7 +55,7 @@
 "Pair" = "جفت کردن";
 "Pair again" = "جفت کردن دوباره";
 "Pair with Android phone" = "جفت کردن با گوشی اندروید";
-"Pair with your Android phone in the Link tab." = "در زبانه «اتصال» با گوشی اندروید جفت کنید.";
+"Pair with your Android phone in the Settings tab." = "در زبانه «تنظیمات» با گوشی اندروید جفت کنید.";
 "Paste" = "چسباندن";
 "Phone" = "گوشی";
 "Recents" = "اخیر";
@@ -222,7 +222,7 @@
 "Call %@?" = "با %@ تماس گرفته شود؟";
 "The call goes through your Android phone." = "تماس از طریق گوشی اندرویدی شما برقرار می‌شود.";
 "%@ · through your Android phone." = "%@ · از طریق گوشی اندرویدی شما.";
-"The Android phone is not connected. Keep it nearby and open the Link tab, then call from the Keypad." = "گوشی اندرویدی وصل نیست. آن را نزدیک نگه دارید و زبانه «اتصال» را باز کنید، سپس از صفحه‌کلید تماس بگیرید.";
+"The Android phone is not connected. Keep it nearby and open the Settings tab, then call from the Keypad." = "گوشی اندرویدی وصل نیست. آن را نزدیک نگه دارید و زبانه «تنظیمات» را باز کنید، سپس از صفحه‌کلید تماس بگیرید.";
 "Show in Keypad" = "نمایش در صفحه‌کلید";
 "Show calls in the Phone app" = "نمایش تماس‌ها در برنامه Phone";
 "Numbers in other apps" = "شماره‌ها در برنامه‌های دیگر";

@@ -40,7 +40,7 @@ final class Router {
     var tab: Tab = .messages
     var openThread: Int64?
 
-    enum Tab: Hashable { case recents, contacts, keypad, messages, link }
+    enum Tab: Hashable { case recents, contacts, keypad, messages, settings }
 
     func open(thread: Int64) {
         tab = .messages

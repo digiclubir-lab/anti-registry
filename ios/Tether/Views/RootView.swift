@@ -14,7 +14,6 @@ struct RootView: View {
         VStack(spacing: 0) {
             ReturnToCallBanner()
             RemoteCallBanner()
-            StatusStrip()
             TabView(selection: $router.tab) {
                 RecentsView()
                     .tabItem { Label("Recents", systemImage: "clock") }
@@ -30,9 +29,9 @@ struct RootView: View {
                     .tabItem { Label("Messages", systemImage: "message") }
                     .badge(model.unreadTotal)
                     .tag(Router.Tab.messages)
-                LinkView()
-                    .tabItem { Label("Link", systemImage: "antenna.radiowaves.left.and.right") }
-                    .tag(Router.Tab.link)
+                SettingsView()
+                    .tabItem { Label("Settings", systemImage: "gearshape") }
+                    .tag(Router.Tab.settings)
             }
         }
         .overlay(alignment: .bottom) {
@@ -63,7 +62,7 @@ struct RootView: View {
                 title: Text("Call \(who ?? model.formatted(req.number))?"),
                 message: Text(linked
                     ? (who == nil ? "The call goes through your Android phone." : "\(model.formatted(req.number)) · through your Android phone.")
-                    : "The Android phone is not connected. Keep it nearby and open the Link tab, then call from the Keypad."),
+                    : "The Android phone is not connected. Keep it nearby and open the Settings tab, then call from the Keypad."),
                 primaryButton: .default(Text(linked ? "Call" : "Show in Keypad")) {
                     if linked { model.dial(req.number, sub: nil) } else { router.keypadNumber = req.number }
                 },
@@ -79,7 +78,7 @@ struct RootView: View {
         .preferredColorScheme(.dark)
         .tint(Color("AccentColor"))
         .task {
-            if !model.isPaired { router.tab = .link }
+            if !model.isPaired { router.tab = .settings }
         }
     }
 }
@@ -115,67 +114,7 @@ struct RemoteCallBanner: View {
     }
 }
 
-/// Thin strip at the top: link state, battery and carrier of the Android phone.
-struct StatusStrip: View {
-    @Environment(\.appModel) private var model
-
-    var body: some View { WithPerceptionTracking { bodyContent } }
-
-    @ViewBuilder private var bodyContent: some View {
-        HStack(spacing: 10) {
-            Circle().fill(dotColor).frame(width: 8, height: 8)
-            Text(stateText).font(.caption.weight(.semibold))
-            Spacer(minLength: 4)
-            if let s = model.status, model.linkState.isConnected || AppModel.demoMode {
-                ForEach(s.sims) { sim in SimStatus(sim: sim, showName: s.sims.count > 1) }
-                HStack(spacing: 2) {
-                    Image(systemName: s.charging ? "battery.100.bolt" : batteryIcon(s.battery))
-                    Text("\(s.battery)%").font(.caption2.monospacedDigit())
-                }
-                .foregroundStyle(s.battery <= 15 && !s.charging ? .red : .secondary)
-            }
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 6)
-        .background(stripBackground)
-    }
-
-    private var dotColor: Color {
-        switch model.linkState {
-        case .connected: .green
-        case .connecting, .handshaking: .orange
-        default: model.isPaired ? .red : .gray
-        }
-    }
-
-    private var stripBackground: Color {
-        if model.isPaired, !model.linkState.isConnected { return Color.red.opacity(0.12) }
-        return Color(.secondarySystemBackground)
-    }
-
-    private var stateText: LocalizedStringKey {
-        switch model.linkState {
-        case .connected: "Connected"
-        case .connecting, .handshaking: "Connecting…"
-        case .poweredOff: "Bluetooth is off"
-        case .unauthorized: "Bluetooth not allowed"
-        case .unpaired: "Not paired"
-        case .searching: model.isPaired ? "Out of reach" : "Not paired"
-        }
-    }
-
-    private func batteryIcon(_ p: Int) -> String {
-        switch p {
-        case ..<13: "battery.0"
-        case ..<38: "battery.25"
-        case ..<63: "battery.50"
-        case ..<88: "battery.75"
-        default: "battery.100"
-        }
-    }
-}
-
-/// One SIM in the status strip: bars, network type (5G / LTE+ / H+ …), roaming, or "No service".
+/// One SIM of the Android phone: bars, network type (5G / LTE+ / H+ …), roaming, or "No service".
 struct SimStatus: View {
     let sim: SimInfo
     var showName = true

@@ -61,7 +61,7 @@ struct MessagesView: View {
                 if model.conversations.isEmpty && search.isEmpty {
                     EmptyStateView(model.syncing ? "Syncing…" : "No messages",
                                            systemImage: "message",
-                                           description: Text(model.isPaired ? "" : "Pair with your Android phone in the Link tab."))
+                                           description: Text(model.isPaired ? "" : "Pair with your Android phone in the Settings tab."))
                 }
             }
             .confirmationDialog(deleting.map { model.displayName($0.address) } ?? "",

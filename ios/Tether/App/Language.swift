@@ -1,7 +1,7 @@
 import Foundation
 import SwiftUI
 
-/// The app's own language, chosen inside the app (Link tab) — independent of the iOS system language.
+/// The app's own language, chosen inside the app (Settings tab) — independent of the iOS system language.
 /// Persian is the default on first launch.
 enum AppLanguage: String, CaseIterable, Identifiable {
     case persian = "fa"
