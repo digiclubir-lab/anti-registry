@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+### Anti Registry Isf (fork by Amirmohammad Yavari)
+
+- The iPhone app is now **Anti Registry Isf**: new name, bundle ID and icon (speech bubble + handset), developer credit in Settings → About.
+- In-app language picker — Persian, English or Automatic (follow the system) — independent of the phone's language; Persian is the default and switching is live, including RTL/LTR and Jalali dates in Persian.
+- Native iPhone look: Recents with contact photos, Contacts with letter sections and a poster-style contact page with per-contact call history, refreshed keypad and Messages; iPhone system sounds for keypad tones and sent/received messages.
+- The Link tab is now a clean Settings page; pairing stays up front and all technical tools live under Advanced. SIM labels no longer sit under call/message rows.
+- Automatic light/dark appearance following the system.
+- Lock Screen status widget (rectangular, circular, inline): bridge connection, SIMs and last sync, following the in-app language.
+- Quick reply from the notification now sends on the conversation's chosen SIM, like the in-app composer.
+- Two-way delete/read sync completed for offline use: deletes and reads made out of reach are queued on the phone and applied to the Android phone on reconnect.
+- Faster sync: newest items first, SMS/calls/contacts interleaved page by page, larger pages — recent items are usable in seconds while history backfills in the background. Fully compatible with the previous Android and iPhone builds.
+
 ## 1.1.0 — 2026-11-23
 
 ### New features
