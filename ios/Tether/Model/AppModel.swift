@@ -89,7 +89,11 @@ final class AppModel {
     var lastSync: Date?
     var selftest: SelftestResult?
     /// Conversations read while the link was down: thread → newest id read, sent on reconnect.
-    @PerceptionIgnored private var pendingRead: [Int64: Int64] = [:]
+    /// In the snapshot (like the outbox), so a read made offline survives the app being killed.
+    private var pendingRead: [Int64: Int64] {
+        get { data.pendingRead ?? [:] }
+        set { data.pendingRead = newValue.isEmpty ? nil : newValue }
+    }
     /// Mobile data / hotspot / Bluetooth tethering on the Android phone; nil until first asked.
     var net: NetState?
     /// The switch that was just flipped and has not been confirmed yet ("data", "hotspot", "bt").
@@ -253,21 +257,33 @@ final class AppModel {
         return false
     }
 
+    /// Deletes asked for while the link is down, sent on reconnect (in the snapshot, like the outbox).
+    private var pendingSmsDeletes: [SmsDelete] {
+        get { data.pendingSmsDeletes ?? [] }
+        set { data.pendingSmsDeletes = newValue.isEmpty ? nil : newValue }
+    }
+    private var pendingCallsDeletes: [CallsDelete] {
+        get { data.pendingCallsDeletes ?? [] }
+        set { data.pendingCallsDeletes = newValue.isEmpty ? nil : newValue }
+    }
+
     func deleteConversation(_ thread: Int64) {
         // A conversation that only exists here (texts still waiting to be sent) needs no phone.
         if thread < 0 || !data.sms.contains(where: { $0.thread == thread && $0.id > 0 }) {
             applyDeleted(ids: [], thread: thread); return
         }
-        guard requireLink() else { return }
-        link.send(MsgType.smsDelete, SmsDelete(thread: thread), expectReply: true)
-        applyDeleted(ids: [], thread: thread)   // at once; the phone's answer confirms (or the next sync restores)
+        // At once locally; live when connected, queued (persisted) when not. The phone's answer
+        // confirms — a refusal (ok=false) restores the rows through a full sync.
+        if linkState.isConnected { link.send(MsgType.smsDelete, SmsDelete(thread: thread), expectReply: true) }
+        else { pendingSmsDeletes.append(SmsDelete(thread: thread)) }
+        applyDeleted(ids: [], thread: thread)
     }
 
     func deleteMessages(_ ids: [Int64]) {
         let real = ids.filter { $0 > 0 }
         if !real.isEmpty {
-            guard requireLink() else { return }
-            link.send(MsgType.smsDelete, SmsDelete(ids: real), expectReply: true)
+            if linkState.isConnected { link.send(MsgType.smsDelete, SmsDelete(ids: real), expectReply: true) }
+            else { pendingSmsDeletes.append(SmsDelete(ids: real)) }
         }
         applyDeleted(ids: ids, thread: nil)
     }
@@ -283,16 +299,17 @@ final class AppModel {
     }
 
     func deleteRecents(_ ids: [Int64]) {
-        guard !ids.isEmpty, requireLink() else { return }
-        link.send(MsgType.callsDelete, CallsDelete(ids: ids), expectReply: true)
+        guard !ids.isEmpty else { return }
+        if linkState.isConnected { link.send(MsgType.callsDelete, CallsDelete(ids: ids), expectReply: true) }
+        else { pendingCallsDeletes.append(CallsDelete(ids: ids)) }
         let gone = Set(ids)
         data.recents.removeAll { gone.contains($0.id) }
         persist()
     }
 
     func clearRecents() {
-        guard requireLink() else { return }
-        link.send(MsgType.callsDelete, CallsDelete(all: true), expectReply: true)
+        if linkState.isConnected { link.send(MsgType.callsDelete, CallsDelete(all: true), expectReply: true) }
+        else { pendingCallsDeletes.append(CallsDelete(all: true)) }
         data.recents = []
         persist()
     }
@@ -395,6 +412,15 @@ final class AppModel {
         // Conversations read while out of reach.
         for (thread, upTo) in pendingRead { link.send(MsgType.smsRead, SmsRead(thread: thread, upTo: upTo)) }
         pendingRead.removeAll()
+        // Deletes asked for while out of reach: the phone applies them now and answers each one;
+        // a refusal (ok=false) restores the rows through a full sync.
+        if !pendingSmsDeletes.isEmpty || !pendingCallsDeletes.isEmpty {
+            for d in pendingSmsDeletes { link.send(MsgType.smsDelete, d, expectReply: true) }
+            pendingSmsDeletes = []
+            for d in pendingCallsDeletes { link.send(MsgType.callsDelete, d, expectReply: true) }
+            pendingCallsDeletes = []
+            persist()
+        }
         // Once: everything read on this device before read state was shared with the Android phone.
         if !UserDefaults.standard.bool(forKey: "readStateBackfilled") {
             UserDefaults.standard.set(true, forKey: "readStateBackfilled")

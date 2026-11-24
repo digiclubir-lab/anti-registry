@@ -74,6 +74,12 @@ struct Snapshot: Codable {
     var smsSyncedUpTo: Int64?
     /// Texts written while the link was down, sent on reconnect (kept across launches).
     var outbox: [OutboxItem]?
+    /// Conversations read while the link was down: thread → newest id read, sent on reconnect (kept across launches).
+    var pendingRead: [Int64: Int64]?
+    /// Deletes asked for while the link was down, sent on reconnect (kept across launches, like the outbox).
+    /// A refusal answers with ok=false, which restores the rows through a full sync — nothing pretends.
+    var pendingSmsDeletes: [SmsDelete]?
+    var pendingCallsDeletes: [CallsDelete]?
     /// Newest call-log id seen in Recents (missed-call badge).
     var recentsSeenUpTo: Int64?
 }
