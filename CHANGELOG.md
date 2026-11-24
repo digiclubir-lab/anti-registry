@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.2.0 — 2026-11-24
+
 ### Anti Registry Isf (fork by Amirmohammad Yavari)
 
 - The iPhone app is now **Anti Registry Isf**: new name, bundle ID and icon (speech bubble + handset), developer credit in Settings → About.
