@@ -20,25 +20,35 @@ struct RecentsView: View {
         NavigationStack {
             List(entries) { e in
                 HStack(spacing: 12) {
-                    Image(systemName: icon(e.type)).foregroundStyle(e.type == 3 || e.type == 5 ? .red : .secondary).frame(width: 22)
-                    VStack(alignment: .leading, spacing: 2) {
+                    Avatar(name: e.name ?? model.displayName(e.num), photo: model.photo(for: e.num), size: 48)
+                    VStack(alignment: .leading, spacing: 3) {
                         Text(e.name ?? model.displayName(e.num))
                             .font(.body.weight(.semibold))
-                            .foregroundStyle(e.type == 3 ? .red : .primary)
-                        HStack(spacing: 6) {
-                            if e.dur > 0 { Text(Duration.seconds(e.dur).formatted(.time(pattern: .minuteSecond))) }
+                            .foregroundStyle(e.type == 3 || e.type == 5 ? .red : .primary)
+                            .lineLimit(1)
+                        HStack(spacing: 5) {
+                            Image(systemName: arrow(e.type)).font(.system(size: 11, weight: .semibold))
+                            Text(secondaryLine(e)).lineLimit(1)
                         }
-                        .font(.caption).foregroundStyle(.secondary)
+                        .font(.subheadline).foregroundStyle(.secondary)
                     }
                     Spacer()
-                    Text(shortTime(e.date)).font(.caption).foregroundStyle(.secondary)
+                    Text(shortTime(e.date)).font(.subheadline).foregroundStyle(.secondary)
+                    Button { model.dial(e.num, sub: e.sub) } label: {
+                        Image(systemName: "phone.fill")
+                            .font(.system(size: 15))
+                            .foregroundStyle(.blue)
+                            .frame(width: 38, height: 38)
+                            .background(Color(.secondarySystemBackground), in: Circle())
+                    }
+                    .buttonStyle(.plain)
                 }
                 .contentShape(Rectangle())
                 .onTapGesture { model.dial(e.num, sub: e.sub) }
                 .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                     // Like Phone: a swipe deletes the entry at once (from the Android phone and every device).
                     Button(role: .destructive) { model.deleteRecents([e.id]) } label: { Label("Delete", systemImage: "trash") }
-                    Button { message(e.num) } label: { Label("Message", systemImage: "message") }.tint(.teal)
+                    Button { message(e.num) } label: { Label("Message", systemImage: "message") }
                 }
                 .contextMenu {
                     Button { model.dial(e.num, sub: e.sub) } label: { Label("Call", systemImage: "phone") }
@@ -67,6 +77,7 @@ struct RecentsView: View {
                 if model.data.recents.isEmpty { EmptyStateView("No recent calls", systemImage: "clock") }
             }
             .navigationTitle("Recents")
+            .navigationBarTitleDisplayMode(.large)
             .confirmationDialog(blocking.map { model.displayName($0) } ?? "",
                                 isPresented: Binding(get: { blocking != nil }, set: { if !$0 { blocking = nil } }), titleVisibility: .visible) {
                 if let n = blocking { Button("Block Contact", role: .destructive) { model.setBlocked(n, true) } }
@@ -102,14 +113,34 @@ struct RecentsView: View {
         return Array(list.prefix(500))
     }
 
-    private func icon(_ type: Int) -> String {
+    /// The small direction arrow in the row's second line, as in Phone: down-left for incoming
+    /// (missed and rejected included), up-right for outgoing.
+    private func arrow(_ type: Int) -> String {
         switch type {
-        case 1: "phone.arrow.down.left"
-        case 2: "phone.arrow.up.right"
-        case 3, 5: "phone.down"
+        case 2: "arrow.up.right"
         case 6: "nosign"
-        default: "phone"
+        default: "arrow.down.left"
         }
+    }
+
+    /// Second line of a Recents row: the number (formatted for a known contact, raw otherwise,
+    /// LTR-isolated so it reads correctly in the RTL layout), plus the duration when there was one.
+    private func secondaryLine(_ e: CallEntry) -> String {
+        let number = e.name != nil || model.name(for: e.num) != nil ? model.formatted(e.num) : e.num
+        var parts = ["\u{2066}\(number)\u{2069}"]
+        if e.dur > 0 { parts.append(Duration.seconds(e.dur).formatted(.time(pattern: .minuteSecond))) }
+        return parts.joined(separator: " · ")
+    }
+}
+
+/// An Apple-style dial key: a soft system-filled circle that brightens while pressed.
+/// The fills are system background colours, so the keypad reads correctly in both colour schemes.
+private struct DialKeyStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .frame(width: 80, height: 80)
+            .background(configuration.isPressed ? Color(.tertiarySystemBackground) : Color(.secondarySystemBackground), in: Circle())
+            .contentShape(Circle())
     }
 }
 
@@ -132,7 +163,7 @@ struct KeypadView: View {
         VStack(spacing: 18) {
             Spacer()
             Text(number.isEmpty ? " " : model.formatted(number))
-                .font(.system(size: 36, weight: .regular, design: .rounded))
+                .font(.system(size: 40, weight: .light))
                 .lineLimit(1).minimumScaleFactor(0.5)
                 .environment(\.layoutDirection, .leftToRight)
                 .contextMenu {
@@ -147,19 +178,21 @@ struct KeypadView: View {
                     Label("Paste", systemImage: "doc.on.clipboard").font(.caption)
                 }
             }
-            VStack(spacing: 14) {
+            VStack(spacing: 16) {
                 ForEach(keys.indices, id: \.self) { r in
                     HStack(spacing: 26) {
                         ForEach(keys[r], id: \.0) { k in
                             Button { if k.0 == "0" && longPressedZero { longPressedZero = false } else { longPressedZero = false; number.append(k.0) } } label: {
-                                VStack(spacing: 0) {
-                                    Text(k.0).font(.system(size: 32, weight: .regular, design: .rounded))
-                                    Text(k.1).font(.system(size: 9, weight: .semibold)).foregroundStyle(.secondary)
+                                VStack(spacing: 1) {
+                                    Text(k.0).font(.system(size: 34, weight: .light))
+                                    if !k.1.isEmpty {
+                                        Text(k.1).font(.system(size: 10, weight: .semibold))
+                                            .tracking(k.1.count > 1 ? 2 : 0)
+                                            .foregroundStyle(.secondary)
+                                    }
                                 }
-                                .frame(width: 78, height: 78)
-                                .background(Color(.secondarySystemBackground), in: Circle())
                             }
-                            .buttonStyle(.plain)
+                            .buttonStyle(DialKeyStyle())
                             // Hold 0 for "+" (the tap that ends the hold must not add a 0 as well).
                             .simultaneousGesture(LongPressGesture().onEnded { _ in if k.0 == "0" { number.append("+"); longPressedZero = true } })
                         }
@@ -168,14 +201,14 @@ struct KeypadView: View {
             }
             .environment(\.layoutDirection, .leftToRight)
             HStack(spacing: 26) {
-                Color.clear.frame(width: 78, height: 78)
+                Color.clear.frame(width: 80, height: 80)
                 Button { model.dial(number, sub: nil) } label: {
                     Image(systemName: "phone.fill").font(.system(size: 30)).foregroundStyle(.white).accessibilityLabel(Text("Call"))
-                        .frame(width: 78, height: 78).background(.green, in: Circle())
+                        .frame(width: 80, height: 80).background(.green, in: Circle())
                 }
                 .disabled(number.isEmpty || !model.linkState.isConnected)
                 Button { if !number.isEmpty { number.removeLast() } } label: {
-                    Image(systemName: "delete.left").font(.system(size: 24)).frame(width: 78, height: 78).accessibilityLabel(Text("Delete"))
+                    Image(systemName: "delete.left").font(.system(size: 26)).foregroundStyle(.primary).frame(width: 80, height: 80).accessibilityLabel(Text("Delete"))
                 }
                 .opacity(number.isEmpty ? 0 : 1)
             }
