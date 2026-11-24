@@ -39,9 +39,12 @@ struct MessagesView: View {
                     if hits.isEmpty { Text("No results").foregroundStyle(.secondary) }
                     ForEach(hits) { m in
                         NavigationLink(value: m.thread) {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(model.displayName(m.addr)).font(.subheadline.weight(.semibold))
-                                Text(MessageText.plain(m.body)).font(.subheadline).foregroundStyle(.secondary).lineLimit(2)
+                            HStack(spacing: 10) {
+                                Avatar(name: model.displayName(m.addr), photo: model.photo(for: m.addr), size: 40)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(model.displayName(m.addr)).font(.subheadline.weight(.semibold))
+                                    Text(MessageText.plain(m.body)).font(.subheadline).foregroundStyle(.secondary).lineLimit(2)
+                                }
                             }
                         }
                     }
@@ -84,6 +87,7 @@ struct MessagesView: View {
             .scrollDismissesKeyboard(.immediately)
             .refreshable { model.requestSync() }
             .navigationTitle("Messages")
+            .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button { hideKeyboard(); composing = true } label: { Image(systemName: "square.and.pencil") }
@@ -135,7 +139,7 @@ struct ConversationRow: View {
         HStack(spacing: 10) {
             // Unread marker, where Messages puts it.
             Circle().fill(conversation.unread > 0 ? Color.blue : Color.clear).frame(width: 10, height: 10)
-            Avatar(name: model.displayName(conversation.address), photo: model.photo(for: conversation.address), size: 46)
+            Avatar(name: model.displayName(conversation.address), photo: model.photo(for: conversation.address), size: 48)
             VStack(alignment: .leading, spacing: 2) {
                 HStack(alignment: .firstTextBaseline) {
                     Text(model.displayName(conversation.address)).font(.body.weight(.semibold)).lineLimit(1)
@@ -156,7 +160,7 @@ struct ConversationRow: View {
         }
         .padding(.vertical, 2)
         .listRowInsets(EdgeInsets(top: 6, leading: 8, bottom: 6, trailing: 14))
-        .alignmentGuide(.listRowSeparatorLeading) { _ in 76 }
+        .alignmentGuide(.listRowSeparatorLeading) { _ in 78 }
     }
 }
 
@@ -240,9 +244,9 @@ struct ThreadView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .principal) {
-                VStack(spacing: 1) {
-                    Avatar(name: name, photo: model.photo(for: address), size: 26)
-                    Text(name).font(.caption2).lineLimit(1)
+                VStack(spacing: 2) {
+                    Avatar(name: name, photo: model.photo(for: address), size: 36)
+                    Text(name).font(.caption).lineLimit(1)
                 }
                 .accessibilityElement(children: .combine)
             }
@@ -320,6 +324,7 @@ struct ThreadView: View {
                 .padding(.trailing, 3).padding(.bottom, 3)
                 .accessibilityLabel(Text("Send"))
             }
+            .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 18))
             .overlay(RoundedRectangle(cornerRadius: 18).strokeBorder(Color(.separator), lineWidth: 1))
         }
         .padding(.horizontal, 10).padding(.vertical, 6)
