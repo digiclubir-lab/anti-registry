@@ -64,7 +64,13 @@ final class LanguageSettings: ObservableObject {
     @Published private(set) var language: AppLanguage
 
     private init() {
-        let raw = UserDefaults.standard.string(forKey: Self.key)
+        // The App Group copy is authoritative once written (the Lock Screen widget reads the
+        // choice from there); the standard-defaults value is the fallback for installs that
+        // predate the group, so an existing choice survives the move.
+        let raw = AppGroup.defaults?.string(forKey: Self.key) ?? UserDefaults.standard.string(forKey: Self.key)
+        if AppGroup.defaults?.string(forKey: Self.key) == nil, let raw {
+            AppGroup.defaults?.set(raw, forKey: Self.key)   // seed the group copy for the widget
+        }
         preference = raw.flatMap(LanguagePreference.init(rawValue:)) ?? .persian
         language = Self.resolve(preference, system: Self.capturedSystemLanguage())
     }
@@ -73,6 +79,7 @@ final class LanguageSettings: ObservableObject {
         guard newValue != preference else { return }
         preference = newValue
         UserDefaults.standard.set(newValue.rawValue, forKey: Self.key)
+        AppGroup.defaults?.set(newValue.rawValue, forKey: Self.key)
         if newValue == .automatic {
             // Drop the process-language override (written for fixed picks): with none in
             // place, Locale.preferredLanguages is the system's own list again, so the next

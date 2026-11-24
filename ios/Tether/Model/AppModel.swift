@@ -608,10 +608,31 @@ final class AppModel {
             pendingSms = [:]
             syncing = false
         }
+        publishWidgetStatus()
     }
 
     func linkFailed(_ reason: String) {
         lastError = reason
+    }
+
+    // MARK: Lock Screen widget
+
+    /// Publishes the widget's snapshot (link state, SIMs, last completed sync) to the App
+    /// Group. Called when the link changes, when a status message lands and when a sync
+    /// completes; the store itself skips unchanged payloads.
+    func publishWidgetStatus() {
+        guard !AppModel.runningTests else { return }
+        let sims = (status?.sims ?? []).map { sim in
+            WidgetSim(label: widgetSimLabel(sim), isDefault: sim.sub == status?.defaultSub)
+        }
+        WidgetStatusStore.publish(WidgetStatusPayload(connected: linkState.isConnected, sims: sims, lastSync: lastSync))
+    }
+
+    /// "Irancell · Personal" — carrier and the SIM's own name, whichever the phone reports.
+    private func widgetSimLabel(_ sim: SimInfo) -> String {
+        var parts: [String] = []
+        for part in [sim.carrier, sim.name] where !part.isEmpty && !parts.contains(part) { parts.append(part) }
+        return parts.isEmpty ? "SIM \(sim.slot + 1)" : parts.joined(separator: " · ")
     }
 
     func received(_ h: MessageHeader, _ payload: Data) {
@@ -621,6 +642,7 @@ final class AppModel {
                 // Kept in memory; saved with the next real change (a full snapshot write per status was wasted).
                 data.lastStatus = try Control.body(StatusBody.self, from: payload)
                 extensions.peerCaps(data.lastStatus?.caps)   // absent (older Android builds): no extensions
+                publishWidgetStatus()
             case MsgType.smsBatch:
                 let b = try Control.body(SmsBatch.self, from: payload)
                 let recent = Int64(Date().addingTimeInterval(-6 * 3600).timeIntervalSince1970 * 1000)
@@ -630,6 +652,7 @@ final class AppModel {
                     data.smsSyncedUpTo = data.sms.map(\.id).filter { $0 > 0 }.max()
                     failStalePlaceholders()
                     persist()
+                    publishWidgetStatus()
                 }
             case MsgType.smsRead:
                 // Read on the other device (or re-announced): clear the unread marks here too.

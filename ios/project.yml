@@ -32,6 +32,8 @@ targets:
         product: TetherCore
       - package: Perception
         product: Perception
+      - target: TetherWidget
+        embed: true
     configFiles:
       Debug: Config/Tether.xcconfig
       Release: Config/Tether.xcconfig
@@ -46,10 +48,31 @@ targets:
         # Paid-team entitlements: Communication Notifications (sender's picture in notifications) and Default Calling
         # App (com.apple.developer.calling-app, iOS 18.2+: tel: links open this app). tools/reinstall-ios.sh first builds with
         # TETHER_ENTITLEMENTS=Tether/Resources/Tether.entitlements TETHER_COMM_NOTIFICATIONS=YES and falls back to
-        # these defaults (no entitlement) when the signing service refuses it.
-        TETHER_ENTITLEMENTS: ""
+        # these defaults when the signing service refuses it.
+        # The default carries only the App Group (the app and the Lock Screen widget share status through it);
+        # App Groups are available to free teams too.
+        TETHER_ENTITLEMENTS: "Tether/Resources/TetherGroups.entitlements"
         TETHER_COMM_NOTIFICATIONS: "NO"
         CODE_SIGN_ENTITLEMENTS: $(TETHER_ENTITLEMENTS)
+  # Lock Screen status widget (accessory families only). Read-only: it renders the status
+  # snapshot the app publishes into the shared App Group; it never touches Bluetooth.
+  TetherWidget:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: TetherWidget
+    configFiles:
+      Debug: Config/Tether.xcconfig
+      Release: Config/Tether.xcconfig
+    settings:
+      base:
+        TARGETED_DEVICE_FAMILY: "1,2"
+        PRODUCT_BUNDLE_IDENTIFIER: "$(TETHER_BUNDLE_ID).widget"
+        INFOPLIST_FILE: TetherWidget/Info.plist
+        GENERATE_INFOPLIST_FILE: NO
+        SUPPORTS_MACCATALYST: NO
+        SKIP_INSTALL: YES
+        CODE_SIGN_ENTITLEMENTS: TetherWidget/TetherWidget.entitlements
   TetherTests:
     type: bundle.unit-test
     platform: iOS

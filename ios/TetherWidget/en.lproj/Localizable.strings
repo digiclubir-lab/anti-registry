@@ -1,0 +1,6 @@
+/* English. The keys are the English texts. */
+"Connected" = "Connected";
+"Not connected" = "Not connected";
+"Last synced" = "Last synced";
+"Not synced yet" = "Not synced yet";
+"Link status and SIMs from the app's last sync." = "Link status and SIMs from the app's last sync.";
