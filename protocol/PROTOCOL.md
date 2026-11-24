@@ -199,12 +199,18 @@ numbers are as stored on the Android phone.
 | `lists.set` | C→P | `{what: "block", num, on}` \| `{what: "mute", thread, on}` → `lists` to all clients |
 | `lists` | P→C | `{blocked:[num], muted:[thread], system, err?}` (also after every sync; `system`: Android's own block list is used) |
 | `sync.ids` | P→C | `{sms:[[first,last]…], calls:[[first,last]…], more?}` after every sync: ids that still exist (inclusive ranges); split into pages with `more: true` when very long, applied once the last page is in |
+
 | `net.get` / `net.set` | C→P | `{}` / `{what, on, sub?}` → `net.state` (see §5.3) |
 | `ussd.send` / `ussd.result` | C→P / P→C | `{code, sub?}` (code matches `^[*#][0-9*#]{1,30}#$`, else refused) → `{ok, text?, err?}` (`re` = the request; sent on SIM `sub` through `TelephonyManager.sendUssdRequest`, 30 s timeout; one at a time; a test client is never sent to the network) |
 | `phone.find` / `phone.finding` | C→P / P→C | `{on}` → `{on, err?}`: the Android phone rings on the alarm stream at maximum alarm volume for at most 30 s (volume restored afterwards; stops on `on:false`, the notification's Stop action or a screen unlock). `phone.finding` is also pushed to every client when it starts or stops |
 | `ringer.set` / `ringer.result` | C→P / P→C | `{mode: "normal"\|"vibrate"\|"silent"}` → `{ok, mode, err?}` (`err` e.g. Do Not Disturb access missing for silent); `status` then carries the new `ringer` |
 | `unpair` | C→P | `{}` (peripheral forgets `S_C`) |
 | `error` | both | `{msg, t?, code?}` (`t`, `code`: set when an extension message is refused, §7.4) |
+
+Batch order within a sync is not part of the contract: clients merge every batch by id, in any arrival
+order, and each stream's `more` ends only with that stream's own last page. Current phone builds send the
+three streams newest-first, a page of each in turn, so the recent items land first and the history backfills
+behind them; older phone builds send stream after stream, oldest first, and sync with any client.
 
 Objects:
 

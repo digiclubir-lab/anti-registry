@@ -13,6 +13,7 @@ import app.tether.audio.PcmuCodec
 import app.tether.audio.VoiceCodec
 import app.tether.core.AudioFrame
 import app.tether.core.CallInfo
+import app.tether.core.Contact
 import app.tether.core.Ext
 import app.tether.core.Message
 import app.tether.core.T
@@ -41,7 +42,10 @@ import app.tether.core.Phone as PhoneEntry
 class Hub(private val app: TetherApp) : ConnectionListener {
     companion object {
         const val TAG = "Tether"
-        const val PAGE_WEIGHT = 12_000
+        // A page's weight over-counts its JSON bytes (per text: 120 + 3 per body char, while a body char costs
+        // at most 3 UTF-8 bytes and the fixed fields stay near the 120), so 30,000 of weight lands around
+        // 30 KB on the wire — half the 65,000-byte record cap — and cuts the record count ~2.5× vs 12,000.
+        const val PAGE_WEIGHT = 30_000
         /** Before the phone-mic setting: "mute this phone's microphone during bridged calls" (true reads as "mute"). */
         const val PREF_MIC_MUTE = "phone_mic_mute"
         /** "This phone's microphone during bridged calls": MicPath.Setting auto (default) | mute | open (issue #2). */
@@ -401,26 +405,42 @@ class Hub(private val app: TetherApp) : ConnectionListener {
 
     private fun sync(c: Connection, smsSince: Long, callsSince: Long, contactsVersion: String) {
         val t0 = SystemClock.elapsedRealtime()
-        val sms = app.sms.since(smsSince)
         // During a call, small pages: a big record would hold the next audio frames up (one record goes out whole).
         val weight = if (audio.running) 1500 else PAGE_WEIGHT
+        // Newest first, and the three streams take turns a page at a time: the recent texts, the recent calls
+        // and the first contacts are on the client within the first records, while the deep history backfills
+        // behind them. The wire format is unchanged — every batch is self-describing, the clients merge by id
+        // in any arrival order, and each stream's "more" still ends only with its own last page — so a client
+        // or phone build from before this change syncs exactly as before, just in the old order.
+        val sms = app.sms.since(smsSince).reversed()
         val smsPages = paginate(sms, weight) { 120 + it.body.length * 3 }
-        smsPages.forEachIndexed { i, p ->
-            c.send(Message(T.SMS_BATCH, JSONObject().put("items", JSONArray(p.map { it.json() })).put("more", i < smsPages.size - 1)))
-        }
-        val calls = app.callLog.since(callsSince)
+        val calls = app.callLog.since(callsSince).reversed()
         val callPages = paginate(calls, weight) { 110 }
-        callPages.forEachIndexed { i, p ->
-            c.send(Message(T.CALLS_BATCH, JSONObject().put("items", JSONArray(p.map { it.json() })).put("more", i < callPages.size - 1)))
-        }
         val version = app.contacts.version()
-        if (version != contactsVersion) {
-            val contacts = app.contacts.all()
-            val pages = paginate(contacts, weight) { it.weight() }
-            pages.forEachIndexed { i, p ->
-                c.send(Message(T.CONTACTS_BATCH, JSONObject().put("items", JSONArray(p.map { it.json() }))
-                    .put("more", i < pages.size - 1).put("version", version).put("full", true)))
+        var contactPages: List<List<Contact>>? = null
+        var i = 0
+        while (true) {
+            var sent = false
+            if (i < smsPages.size) {
+                c.send(Message(T.SMS_BATCH, JSONObject().put("items", JSONArray(smsPages[i].map { it.json() })).put("more", i < smsPages.size - 1)))
+                sent = true
             }
+            if (i < callPages.size) {
+                c.send(Message(T.CALLS_BATCH, JSONObject().put("items", JSONArray(callPages[i].map { it.json() })).put("more", i < callPages.size - 1)))
+                sent = true
+            }
+            if (version != contactsVersion) {
+                // Queried only once the first text and call pages are already queued: reading every contact
+                // (and decoding its photo) must not delay the recent items.
+                val pages = contactPages ?: paginate(app.contacts.all(), weight) { it.weight() }.also { contactPages = it }
+                if (i < pages.size) {
+                    c.send(Message(T.CONTACTS_BATCH, JSONObject().put("items", JSONArray(pages[i].map { it.json() }))
+                        .put("more", i < pages.size - 1).put("version", version).put("full", true)))
+                    sent = true
+                }
+            }
+            if (!sent) break
+            i++
         }
         // What still exists (rows deleted on the Android phone or by the other client disappear on this client too),
         // and the block / mute lists.

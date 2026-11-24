@@ -754,6 +754,15 @@ final class AppModel {
                     incomingContacts = []
                     rebuildIndex()
                     persist()
+                } else if b.full {
+                    // First paint: show this page's contacts already (names and photos resolve while the
+                    // rest still syncs). The last page's swap above stays authoritative — it alone drops
+                    // contacts deleted on the Android phone, so nothing here can resurrect one for good.
+                    var byId = Dictionary(data.contacts.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
+                    for c in b.items { byId[c.id] = c }
+                    data.contacts = byId.values.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+                    rebuildIndex()
+                    persist()
                 }
             case MsgType.contactResult:
                 let r = try Control.body(ContactResult.self, from: payload)
