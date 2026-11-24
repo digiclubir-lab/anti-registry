@@ -1,4 +1,6 @@
 /* Persian (فارسی). Layout mirrors automatically (RTL). */
+"About" = "درباره";
+"Advanced" = "پیشرفته";
 "All" = "همه";
 "Allow Bluetooth for Tether in Settings" = "در تنظیمات، بلوتوث را برای تتر مجاز کنید";
 "Android phone silent" = "گوشی اندروید بی‌صدا";
@@ -8,6 +10,7 @@
 "Bluetooth not allowed" = "بلوتوث مجاز نیست";
 "Call audio" = "صدای تماس";
 "Call failed" = "تماس ناموفق بود";
+"Calls and messages from your Android phone, on this iPhone." = "تماس‌ها و پیام‌های گوشی اندروید شما، روی این آیفون.";
 "Cancel" = "لغو";
 "Code %@" = "کد %@";
 "Connected" = "وصل";
@@ -19,6 +22,7 @@
 "Copy code" = "کپی کد";
 "Copy code %@" = "کپی کد %@";
 "Default phone app" = "برنامه پیش‌فرض تلفن";
+"Developer" = "توسعه‌دهنده";
 "Earpiece only" = "فقط گوشی";
 "Email" = "ایمیل";
 "Forget the Android phone and delete synced data from this iPhone?" = "گوشی اندروید فراموش شود و داده‌های همگام‌شده از این آیفون پاک شود؟";
@@ -62,6 +66,7 @@
 "Search contacts" = "جستجوی مخاطبین";
 "Search messages" = "جستجوی پیام‌ها";
 "Send" = "ارسال";
+"Settings" = "تنظیمات";
 "SIM" = "سیم‌کارت";
 "SIM %lld" = "سیم %lld";
 "SIM %lld · %@" = "سیم %lld · %@";
@@ -76,6 +81,7 @@
 "To" = "به";
 "Type" = "نوع";
 "Unknown" = "ناشناس";
+"Version" = "نسخه";
 "Unpair" = "لغو جفت";
 "Wireless debugging" = "اشکال‌زدایی بی‌سیم";
 "Work" = "محل کار";
