@@ -33,10 +33,10 @@ struct SettingsView: View {
                 }
 
                 Section {
-                    Picker(selection: Binding(get: { languageSettings.language },
-                                              set: { languageSettings.setLanguage($0) })) {
-                        ForEach(AppLanguage.allCases) { language in
-                            Text(language.displayName).tag(language)
+                    Picker(selection: Binding(get: { languageSettings.preference },
+                                              set: { languageSettings.setPreference($0) })) {
+                        ForEach(LanguagePreference.allCases) { preference in
+                            Text(preference.displayName).tag(preference)
                         }
                     } label: {
                         Label("Language", systemImage: "globe")
