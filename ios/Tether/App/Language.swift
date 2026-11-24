@@ -71,8 +71,9 @@ final class LanguageSettings: ObservableObject {
         if AppGroup.defaults?.string(forKey: Self.key) == nil, let raw {
             AppGroup.defaults?.set(raw, forKey: Self.key)   // seed the group copy for the widget
         }
-        preference = raw.flatMap(LanguagePreference.init(rawValue:)) ?? .persian
-        language = Self.resolve(preference, system: Self.capturedSystemLanguage())
+        let initial = raw.flatMap(LanguagePreference.init(rawValue:)) ?? .persian
+        preference = initial
+        language = Self.resolve(initial, system: Self.capturedSystemLanguage())
     }
 
     func setPreference(_ newValue: LanguagePreference) {
