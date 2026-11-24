@@ -75,7 +75,8 @@ struct RootView: View {
             // Presented content does not always inherit environment objects: pass them explicitly.
             InCallView().environment(\.appModel, AppModel.shared).environment(\.router, Router.shared).appLanguageEnvironment()
         }
-        .preferredColorScheme(.dark)
+        // No forced colour scheme: the app follows the system appearance (light/dark).
+        // Screens that are dark by nature opt in themselves (InCallView, the pairing scanner).
         .tint(Color("AccentColor"))
         .task {
             if !model.isPaired { router.tab = .settings }
