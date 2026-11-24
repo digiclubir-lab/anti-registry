@@ -57,6 +57,8 @@ struct ContactsView: View {
     }
 
     /// One list row: photo (or initials) first, then the name, as in Contacts.
+    /// Star / unstar without opening the contact: leading swipe or long-press
+    /// (setStarred itself refuses with a message while the phone is not connected).
     private func contactRow(_ c: Contact) -> some View {
         NavigationLink {
             ContactDetailView(contact: c)
@@ -67,6 +69,17 @@ struct ContactsView: View {
                 if c.starred { Image(systemName: "star.fill").font(.caption2).foregroundStyle(.yellow) }
             }
             .padding(.vertical, 2)
+        }
+        .swipeActions(edge: .leading) {
+            Button { model.setStarred(c.id, !c.starred) } label: {
+                Label(c.starred ? "Remove from Favourites" : "Add to Favourites", systemImage: c.starred ? "star.slash" : "star.fill")
+            }
+            .tint(.orange)
+        }
+        .contextMenu {
+            Button { model.setStarred(c.id, !c.starred) } label: {
+                Label(c.starred ? "Remove from Favourites" : "Add to Favourites", systemImage: c.starred ? "star.slash" : "star")
+            }
         }
     }
 
@@ -122,6 +135,9 @@ struct FavouriteRow: View {
         }
         .swipeActions {
             Button { model.setStarred(contact.id, false) } label: { Label("Remove", systemImage: "star.slash") }.tint(.orange)
+        }
+        .contextMenu {
+            Button { model.setStarred(contact.id, false) } label: { Label("Remove from Favourites", systemImage: "star.slash") }
         }
     }
 }
