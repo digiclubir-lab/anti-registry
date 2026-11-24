@@ -5,6 +5,7 @@ import TetherCore
 
 struct LinkView: View {
     @Environment(\.appModel) private var model
+    @EnvironmentObject private var languageSettings: LanguageSettings
     @State private var scanning = false
     @State private var confirmUnpair = false
 
@@ -21,11 +22,22 @@ struct LinkView: View {
                             .foregroundStyle(model.linkState.isConnected ? .teal : .secondary)
                             .frame(width: 48)
                         VStack(alignment: .leading, spacing: 3) {
-                            Text(model.isPaired ? model.peerName : String(localized: "Not paired")).font(.headline)
+                            Text(model.isPaired ? model.peerName : L10n.string("Not paired")).font(.headline)
                             Text(stateLine).font(.subheadline).foregroundStyle(.secondary)
                         }
                     }
                     .padding(.vertical, 6)
+                }
+
+                Section {
+                    Picker(selection: Binding(get: { languageSettings.language },
+                                              set: { languageSettings.setLanguage($0) })) {
+                        ForEach(AppLanguage.allCases) { language in
+                            Text(language.displayName).tag(language)
+                        }
+                    } label: {
+                        Label("Language", systemImage: "globe")
+                    }
                 }
 
                 Section {
@@ -49,8 +61,8 @@ struct LinkView: View {
                                 Text("SIM \(sim.slot + 1) · \(sim.name)")
                             }
                         }
-                        LabeledContent("Default phone app", value: s.dialer ? String(localized: "Tether") : String(localized: "Not set"))
-                        LabeledContent("Wireless debugging", value: s.adbWifi ? String(localized: "On") : String(localized: "Off"))
+                        LabeledContent("Default phone app", value: s.dialer ? L10n.string("Tether") : L10n.string("Not set"))
+                        LabeledContent("Wireless debugging", value: s.adbWifi ? L10n.string("On") : L10n.string("Off"))
                     }
                     Section {
                         NetToggle(title: "Mobile data", icon: "antenna.radiowaves.left.and.right", what: "data", value: model.net?.data)
@@ -107,12 +119,12 @@ struct LinkView: View {
                         PhoneToolsSection(status: s, tools: t).id("phonetools")
                     }
                     Section {
-                        LabeledContent("Audio helper", value: s.helper.state == "running" ? String(localized: "Running") : String(localized: "Stopped"))
+                        LabeledContent("Audio helper", value: s.helper.state == "running" ? L10n.string("Running") : L10n.string("Stopped"))
                         if let m = s.helper.method { LabeledContent("Inject method", value: m) }
                         if let m = s.helper.capture { LabeledContent("Capture method", value: m) }
                         if let q = s.helper.silent {
-                            LabeledContent("Android phone silent", value: q == "full" ? String(localized: "Yes") :
-                                q == "earpiece" ? String(localized: "Earpiece only") : String(localized: "No"))
+                            LabeledContent("Android phone silent", value: q == "full" ? L10n.string("Yes") :
+                                q == "earpiece" ? L10n.string("Earpiece only") : L10n.string("No"))
                         }
                         if let mic = s.helper.mic {
                             Picker("Android phone's microphone", selection: Binding(get: { CallAudioRows.micChoice(mic) }, set: { model.setPhoneMic($0) })) {
@@ -223,6 +235,7 @@ struct LinkView: View {
                     if let code { model.pair(code) }
                 }
                 .environment(\.appModel, AppModel.shared)
+                .appLanguageEnvironment()
             }
             .confirmationDialog("Forget the Android phone and delete synced data from this iPhone?", isPresented: $confirmUnpair,
                                 titleVisibility: .visible) {
@@ -233,12 +246,12 @@ struct LinkView: View {
 
     private var stateLine: String {
         switch model.linkState {
-        case .connected(let t): String(localized: "Connected over \(t == "l2cap" ? "L2CAP" : "GATT")")
-        case .connecting, .handshaking: String(localized: "Connecting…")
-        case .searching: model.isPaired ? String(localized: "Out of reach, will reconnect automatically") : String(localized: "Not paired")
-        case .poweredOff: String(localized: "Bluetooth is off")
-        case .unauthorized: String(localized: "Allow Bluetooth for Tether in Settings")
-        case .unpaired: String(localized: "Not paired")
+        case .connected(let t): L10n.string("Connected over \(t == "l2cap" ? "L2CAP" : "GATT")")
+        case .connecting, .handshaking: L10n.string("Connecting…")
+        case .searching: model.isPaired ? L10n.string("Out of reach, will reconnect automatically") : L10n.string("Not paired")
+        case .poweredOff: L10n.string("Bluetooth is off")
+        case .unauthorized: L10n.string("Allow Bluetooth for Tether in Settings")
+        case .unpaired: L10n.string("Not paired")
         }
     }
 }
@@ -273,7 +286,7 @@ struct VPNSection: View {
     @ViewBuilder private var bodyContent: some View {
         Section {
             LabeledContent {
-                Text(model.net?.vpn == true ? String(localized: "On") : model.net?.vpn == false ? String(localized: "Off") : "–")
+                Text(model.net?.vpn == true ? L10n.string("On") : model.net?.vpn == false ? L10n.string("Off") : "–")
                     .foregroundStyle(model.net?.vpn == true ? Color.green : Color.secondary)
             } label: {
                 Label("VPN on the Android phone", systemImage: "lock.shield")
@@ -309,7 +322,7 @@ struct IPhoneProxySetup: View {
                         Text(a.pac).font(.callout.monospaced()).textSelection(.enabled)
                             .environment(\.layoutDirection, .leftToRight)
                         Spacer()
-                        Button { UIPasteboard.general.string = a.pac; model.flash(String(localized: "Copied")) } label: {
+                        Button { UIPasteboard.general.string = a.pac; model.flash(L10n.string("Copied")) } label: {
                             Image(systemName: "doc.on.doc")
                         }.buttonStyle(.borderless)
                     }
@@ -354,7 +367,7 @@ struct LinkLogView: View {
 
     var body: some View {
         ScrollView {
-            Text(text.isEmpty ? String(localized: "No events yet.") : text)
+            Text(text.isEmpty ? L10n.string("No events yet.") : text)
                 .font(.caption.monospaced()).textSelection(.enabled)
                 .frame(maxWidth: .infinity, alignment: .leading).padding()
                 .environment(\.layoutDirection, .leftToRight)
@@ -431,7 +444,7 @@ struct SigningSection: View {
             Section {
                 LabeledContent("App expires") {
                     VStack(alignment: .trailing, spacing: 2) {
-                        Text(days == 0 ? String(localized: "Today") : String(localized: "in \(days) days"))
+                        Text(days == 0 ? L10n.string("Today") : L10n.string("in \(days) days"))
                             .foregroundStyle(days <= 2 ? Color.red : (days <= 4 ? Color.orange : Color.primary))
                         Text(expiry.formatted(date: .abbreviated, time: .shortened)).font(.caption).foregroundStyle(.secondary)
                     }
@@ -455,27 +468,27 @@ enum CallAudioRows {
 
     static func micPathText(_ p: String) -> String {
         switch p {
-        case "off": return String(localized: "Microphone out of the call")
-        case "muted": return String(localized: "Microphone muted")
-        default: return String(localized: "Microphone on")
+        case "off": return L10n.string("Microphone out of the call")
+        case "muted": return L10n.string("Microphone muted")
+        default: return L10n.string("Microphone on")
         }
     }
 
     static func micFooter(_ mic: String) -> String {
         switch micChoice(mic) {
-        case "mute": return String(localized: "Muting works on some phones only: on others it also mutes your voice for the other side. Tether checks during each call and turns the mute off if your voice does not get through.")
-        case "open": return String(localized: "The Android phone's microphone stays in the call: the other side may hear your voice twice, and the room around the phone.")
-        default: return String(localized: "Tether puts the call in Android's redirect audio mode: the Android phone's own microphone and earpiece leave the call, so the other side hears only this iPhone. Tether checks that both directions still work and keeps the microphone on where the phone does not allow it.")
+        case "mute": return L10n.string("Muting works on some phones only: on others it also mutes your voice for the other side. Tether checks during each call and turns the mute off if your voice does not get through.")
+        case "open": return L10n.string("The Android phone's microphone stays in the call: the other side may hear your voice twice, and the room around the phone.")
+        default: return L10n.string("Tether puts the call in Android's redirect audio mode: the Android phone's own microphone and earpiece leave the call, so the other side hears only this iPhone. Tether checks that both directions still work and keeps the microphone on where the phone does not allow it.")
         }
     }
 
     static func uplinkText(_ u: String) -> String {
         switch u {
-        case "ok": return String(localized: "Reaches the other side")
-        case "checking": return String(localized: "Checking…")
-        case "muted-locally-fixed": return String(localized: "Was muted by the phone; fixed")
-        case "off": return String(localized: "Not muted by the phone")
-        default: return String(localized: "Not checked")
+        case "ok": return L10n.string("Reaches the other side")
+        case "checking": return L10n.string("Checking…")
+        case "muted-locally-fixed": return L10n.string("Was muted by the phone; fixed")
+        case "off": return L10n.string("Not muted by the phone")
+        default: return L10n.string("Not checked")
         }
     }
 
@@ -517,7 +530,7 @@ struct PhoneToolsSection: View {
                 if model.ussdPending {
                     HStack(spacing: 8) { ProgressView().controlSize(.small); Text("Waiting for the carrier…").foregroundStyle(.secondary) }
                 } else if let r = model.ussdResult {
-                    Text(r.ok ? (r.text ?? "") : (r.err ?? String(localized: "No answer")))
+                    Text(r.ok ? (r.text ?? "") : (r.err ?? L10n.string("No answer")))
                         .font(.callout).foregroundStyle(r.ok ? Color.primary : Color.red).textSelection(.enabled)
                 }
             }
@@ -593,7 +606,7 @@ struct PairingView: View {
                 .padding(32)
             } else {
                 QRScanner(onCode: { text in
-                    if let code = PairingCode.parse(text) { done(code) } else { error = String(localized: "That is not a Tether pairing code.") }
+                    if let code = PairingCode.parse(text) { done(code) } else { error = L10n.string("That is not a Tether pairing code.") }
                 }, onUnavailable: { cameraMissing = true })
                 .ignoresSafeArea()
                 // Viewfinder: where to hold the code.
@@ -610,7 +623,7 @@ struct PairingView: View {
                 }
                 .padding(.horizontal, 16)
                 Spacer()
-                Text(error ?? String(localized: "Scan the code shown in Tether on the Android phone."))
+                Text(error ?? L10n.string("Scan the code shown in Tether on the Android phone."))
                     .font(.callout).foregroundStyle(.white).multilineTextAlignment(.center)
                     .padding(.horizontal, 16).padding(.vertical, 10)
                     .background(.black.opacity(0.45), in: RoundedRectangle(cornerRadius: 12))
@@ -655,7 +668,7 @@ struct ManualPairingView: View {
                         if let s = items.first { typed = s.trimmingCharacters(in: .whitespacesAndNewlines) }
                     }
                 } footer: {
-                    Text(error ?? String(localized: "Paste or type a tether1: pairing code you have as text. The Android phone shows it as a QR code: scanning is quicker."))
+                    Text(error ?? L10n.string("Paste or type a tether1: pairing code you have as text. The Android phone shows it as a QR code: scanning is quicker."))
                         .foregroundStyle(error == nil ? Color.secondary : Color.red)
                 }
             }
@@ -671,7 +684,7 @@ struct ManualPairingView: View {
 
     private func use() {
         if let code = PairingCode.parse(typed.trimmingCharacters(in: .whitespacesAndNewlines)) { done(code) }
-        else { error = String(localized: "That is not a Tether pairing code.") }
+        else { error = L10n.string("That is not a Tether pairing code.") }
     }
 }
 

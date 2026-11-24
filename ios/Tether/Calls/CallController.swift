@@ -367,7 +367,7 @@ final class CallController: NSObject {
         if model.callScreen?.uuid == uuid {
             model.callScreen = nextScreen()
             if model.callScreen != nil { routeChanged() }
-            if model.callScreen == nil { model.showCallScreen = false; if flash { model.flash(String(localized: "Call ended")) } }
+            if model.callScreen == nil { model.showCallScreen = false; if flash { model.flash(L10n.string("Call ended")) } }
         }
         if !hasCalls {
             model.audio.stop()
@@ -440,7 +440,7 @@ final class CallController: NSObject {
             guard let self, !Task.isCancelled, self.pendingOutgoing == p else { return }
             LinkJournal.shared.add("dial: no call from the Android phone after 30 s")
             self.dialFailed("no call")
-            self.model.lastError = String(localized: "Call failed")
+            self.model.lastError = L10n.string("Call failed")
         }
     }
 
@@ -481,7 +481,7 @@ final class CallController: NSObject {
         controller.request(CXTransaction(action: action)) { error in
             if let error {
                 NSLog("[calls] start failed: %@", "\(error)")
-                Task { @MainActor in self.model.callScreen = nil; self.model.lastError = String(localized: "Call failed") }
+                Task { @MainActor in self.model.callScreen = nil; self.model.lastError = L10n.string("Call failed") }
             }
         }
     }

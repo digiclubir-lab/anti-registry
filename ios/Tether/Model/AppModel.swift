@@ -193,7 +193,7 @@ final class AppModel {
     func name(for number: String) -> String? { nameIndex[PhoneNumber.matchKey(number)] }
     func photo(for number: String) -> String? { photoIndex[PhoneNumber.matchKey(number)] }
     /// A contact's name, else the number in a left-to-right isolate (so "+98…" keeps its plus sign in Persian layout).
-    func displayName(_ number: String) -> String { name(for: number) ?? (number.isEmpty ? String(localized: "Unknown") : "\u{2066}\(formatted(number))\u{2069}") }
+    func displayName(_ number: String) -> String { name(for: number) ?? (number.isEmpty ? L10n.string("Unknown") : "\u{2066}\(formatted(number))\u{2069}") }
     /// Country national numbers belong to: the default SIM's (from the Android phone), else this iPhone's region.
     var numberRegion: String? {
         let sim = sims.first(where: { $0.sub == status?.defaultSub && $0.country != nil }) ?? sims.first(where: { $0.country != nil })
@@ -223,7 +223,7 @@ final class AppModel {
     /// The SIM's own name ("Personal", "Work"), only when there are two SIMs (with one it says nothing).
     func simName(_ sub: Int?) -> String? {
         guard sims.count > 1, let sub, let sim = sims.first(where: { $0.sub == sub }) else { return nil }
-        return sim.name.isEmpty ? String(localized: "SIM \(sim.slot + 1)") : sim.name
+        return sim.name.isEmpty ? L10n.string("SIM \(sim.slot + 1)") : sim.name
     }
 
     func markRead(thread: Int64) {
@@ -249,7 +249,7 @@ final class AppModel {
 
     private func requireLink() -> Bool {
         if linkState.isConnected { return true }
-        lastError = String(localized: "The Android phone is not connected.")
+        lastError = L10n.string("The Android phone is not connected.")
         return false
     }
 
@@ -412,7 +412,7 @@ final class AppModel {
     func sendSms(to: String, body: String, sub: Int?) {
         let text = body.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
-        guard text.utf8.count <= 12_000 else { lastError = String(localized: "Message too long"); return }
+        guard text.utf8.count <= 12_000 else { lastError = L10n.string("Message too long"); return }
         // Local placeholder until the Android phone's provider row arrives through sms.new. Ids are negative and unique.
         let now = Int64(Date().timeIntervalSince1970 * 1000)
         let localId = -max(now, (data.sms.map { -$0.id }.max() ?? 0) + 1)
@@ -426,7 +426,7 @@ final class AppModel {
         } else {
             outbox.append(OutboxItem(to: to, body: text, sub: sub, placeholder: localId))
             persist()
-            lastError = String(localized: "Will send when the Android phone is back in reach")
+            lastError = L10n.string("Will send when the Android phone is back in reach")
         }
     }
 
@@ -487,7 +487,7 @@ final class AppModel {
             try? await Task.sleep(for: .seconds(35))
             guard let self, self.netPending == "dataSub" else { return }
             self.netPending = nil
-            self.net?.err = String(localized: "The Android phone did not answer.")
+            self.net?.err = L10n.string("The Android phone did not answer.")
         }
     }
 
@@ -501,7 +501,7 @@ final class AppModel {
             try? await Task.sleep(for: .seconds(35))
             guard let self, self.netPending == "rat\(slot)" else { return }
             self.netPending = nil
-            self.net?.err = String(localized: "The Android phone did not answer.")
+            self.net?.err = L10n.string("The Android phone did not answer.")
         }
     }
 
@@ -520,7 +520,7 @@ final class AppModel {
             try? await Task.sleep(for: .seconds(35))
             guard let self, self.netPending == what else { return }
             self.netPending = nil
-            self.net?.err = String(localized: "The Android phone did not answer.")
+            self.net?.err = L10n.string("The Android phone did not answer.")
         }
     }
 
@@ -529,7 +529,7 @@ final class AppModel {
         let code = code.trimmingCharacters(in: .whitespaces)
         guard linkState.isConnected, !ussdPending else { return }
         guard UssdCode.isValid(code) else {
-            ussdResult = UssdResult(ok: false, text: nil, err: String(localized: "Not a carrier code (like *123#)"))
+            ussdResult = UssdResult(ok: false, text: nil, err: L10n.string("Not a carrier code (like *123#)"))
             return
         }
         ussdPending = true; ussdResult = nil
@@ -538,7 +538,7 @@ final class AppModel {
             try? await Task.sleep(for: .seconds(40))
             guard let self, self.ussdPending else { return }
             self.ussdPending = false
-            self.ussdResult = UssdResult(ok: false, text: nil, err: String(localized: "The Android phone did not answer."))
+            self.ussdResult = UssdResult(ok: false, text: nil, err: L10n.string("The Android phone did not answer."))
         }
     }
 
@@ -652,14 +652,14 @@ final class AppModel {
             case MsgType.smsDeleted:
                 let d = try Control.body(SmsDeleted.self, from: payload)
                 if d.ok { applyDeleted(ids: d.ids, thread: d.thread) }
-                else { lastError = String(localized: "Not deleted") + (d.err.map { ": \($0)" } ?? ""); requestSync(full: true) }
+                else { lastError = L10n.string("Not deleted") + (d.err.map { ": \($0)" } ?? ""); requestSync(full: true) }
             case MsgType.callsDeleted:
                 let d = try Control.body(CallsDeleted.self, from: payload)
                 if d.ok {
                     if d.all == true { data.recents = [] } else { let g = Set(d.ids); data.recents.removeAll { g.contains($0.id) } }
                     persist()
                 } else {
-                    lastError = String(localized: "Not deleted") + (d.err.map { ": \($0)" } ?? "")
+                    lastError = L10n.string("Not deleted") + (d.err.map { ": \($0)" } ?? "")
                     requestSync(full: true)
                 }
             case MsgType.lists:
@@ -688,7 +688,7 @@ final class AppModel {
                 if let re = h.re, let p = pendingSms[re] {
                     if let i = data.sms.firstIndex(where: { $0.id == p.id }) { data.sms[i].box = r.ok ? 2 : 5 }
                     if r.state != "sent" { pendingSms[re] = nil }
-                    if !r.ok { lastError = String(localized: "Message not sent") + (r.err.map { ": \($0)" } ?? "") }
+                    if !r.ok { lastError = L10n.string("Message not sent") + (r.err.map { ": \($0)" } ?? "") }
                 }
             case MsgType.contactsBatch:
                 let b = try Control.body(ContactsBatch.self, from: payload)
@@ -705,7 +705,7 @@ final class AppModel {
                 }
             case MsgType.contactResult:
                 let r = try Control.body(ContactResult.self, from: payload)
-                if !r.ok { lastError = r.err.map { String(localized: "Contact not saved") + ": " + $0 } ?? String(localized: "Contact not saved") }
+                if !r.ok { lastError = r.err.map { L10n.string("Contact not saved") + ": " + $0 } ?? L10n.string("Contact not saved") }
                 // Saved or not, fetch the Android phone's version so both sides agree again.
                 requestSync()
             case MsgType.callsBatch:
@@ -737,7 +737,7 @@ final class AppModel {
                 remoteCalls = calls.remote.values.sorted { $0.cid < $1.cid }
             case MsgType.callDialed:
                 let r = try Control.body(OkResult.self, from: payload)
-                if !r.ok { calls.dialFailed(r.err ?? "") ; lastError = String(localized: "Call failed") + (r.err.map { ": \($0)" } ?? "") }
+                if !r.ok { calls.dialFailed(r.err ?? "") ; lastError = L10n.string("Call failed") + (r.err.map { ": \($0)" } ?? "") }
                 else { calls.dialAccepted() }
             case MsgType.audioStart:
                 audio.configure(try Control.body(AudioStart.self, from: payload))

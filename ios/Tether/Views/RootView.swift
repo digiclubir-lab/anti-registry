@@ -74,7 +74,7 @@ struct RootView: View {
         .fullScreenCover(isPresented: Binding(get: { model.showCallScreen && model.callScreen != nil },
                                               set: { model.showCallScreen = $0 })) {
             // Presented content does not always inherit environment objects: pass them explicitly.
-            InCallView().environment(\.appModel, AppModel.shared).environment(\.router, Router.shared)
+            InCallView().environment(\.appModel, AppModel.shared).environment(\.router, Router.shared).appLanguageEnvironment()
         }
         .preferredColorScheme(.dark)
         .tint(Color("AccentColor"))
@@ -96,7 +96,7 @@ struct RemoteCallBanner: View {
                 Image(systemName: "arrow.left.arrow.right")
                 VStack(alignment: .leading, spacing: 1) {
                     Text(model.displayName(c.num)).font(.footnote.weight(.semibold)).lineLimit(1)
-                    Text("On \(c.at ?? String(localized: "another device"))").font(.caption2).opacity(0.85)
+                    Text("On \(c.at ?? L10n.string("another device"))").font(.caption2).opacity(0.85)
                 }
                 Spacer()
                 Button {
@@ -188,7 +188,7 @@ struct SimStatus: View {
                 if let n = sim.net { Text(n).font(.caption2.weight(.semibold)) }
                 if sim.roaming == true { Text("R").font(.caption2.weight(.bold)).foregroundStyle(.orange) }
             } else {
-                Text(sim.service == "emergency" ? "SOS" : String(localized: "No service")).font(.caption2).foregroundStyle(.secondary)
+                Text(sim.service == "emergency" ? "SOS" : L10n.string("No service")).font(.caption2).foregroundStyle(.secondary)
             }
         }
         .accessibilityElement(children: .combine)
@@ -265,7 +265,7 @@ struct SimPicker: View {
     }
 
     private var label: String {
-        guard let sim = model.sims.first(where: { $0.sub == sub }) else { return String(localized: "SIM") }
+        guard let sim = model.sims.first(where: { $0.sub == sub }) else { return L10n.string("SIM") }
         return sim.name.isEmpty ? "SIM \(sim.slot + 1)" : sim.name
     }
 }
@@ -277,7 +277,7 @@ extension Date {
 func shortTime(_ ms: Int64) -> String {
     let d = Date(millis: ms)
     if Calendar.current.isDateInToday(d) { return d.formatted(date: .omitted, time: .shortened) }
-    if Calendar.current.isDateInYesterday(d) { return String(localized: "Yesterday") }
+    if Calendar.current.isDateInYesterday(d) { return L10n.string("Yesterday") }
     return d.formatted(.dateTime.day().month(.abbreviated))
 }
 

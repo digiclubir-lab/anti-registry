@@ -12,8 +12,8 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
         MainActor.assumeIsolatedCompat {
             guard AppModel.shared.link.isPaired else { return }
             let c = UNMutableNotificationContent()
-            c.title = String(localized: "Calls paused")
-            c.body = String(localized: "The app was closed. Open it again to keep receiving calls and messages from your Android phone.")
+            c.title = L10n.string("Calls paused")
+            c.body = L10n.string("The app was closed. Open it again to keep receiving calls and messages from your Android phone.")
             UNUserNotificationCenter.current().add(UNNotificationRequest(identifier: "app-closed", content: c,
                 trigger: UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)))
         }
@@ -21,6 +21,8 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
 
     func application(_ application: UIApplication,
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
+        // The in-app language (default Persian) first, before any string is resolved.
+        LanguageSettings.applyAtLaunch()
         // Create the model (and with it the CBCentralManager) right away: when iOS relaunches us in the
         // background for a Bluetooth event, state restoration needs the manager during launch.
         Notifications.shared.setUp()
@@ -106,6 +108,7 @@ final class Router {
 struct TetherApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var delegate
     @Environment(\.scenePhase) private var phase
+    @ObservedObject private var languageSettings = LanguageSettings.shared
 
     var body: some Scene {
         WindowGroup {
@@ -118,6 +121,13 @@ struct TetherApp: App {
         RootView()
             .environment(\.appModel, AppModel.shared)
             .environment(\.router, Router.shared)
+            .environment(\.locale, languageSettings.language.locale)
+            .environment(\.layoutDirection, languageSettings.language.layoutDirection)
+            .environmentObject(languageSettings)
+            // A language switch rebuilds the tree so every string — including ones a view cached
+            // in its state — is resolved again in the new language. Tab selection lives in the
+            // Router singleton and survives; in-tab navigation stacks start over.
+            .id(languageSettings.language)
             .onOpenURL { Router.shared.open(url: $0) }
             .onContinueUserActivity("INStartCallIntent") { Router.shared.continueActivity($0) }
             .onContinueUserActivity("INStartAudioCallIntent") { Router.shared.continueActivity($0) }

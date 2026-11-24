@@ -96,7 +96,7 @@ struct MessagesView: View {
                     composing = false
                     if let thread { path = [thread] }
                 }
-                .environment(\.appModel, AppModel.shared).environment(\.router, Router.shared)
+                .environment(\.appModel, AppModel.shared).environment(\.router, Router.shared).appLanguageEnvironment()
             }
             .onChangeCompat(of: router.openThread) { t in
                 if let t { path = [t]; router.openThread = nil }
@@ -199,9 +199,9 @@ struct ThreadView: View {
                 ? transcriptTime(m.date) + (sim.map { " · \($0)" } ?? "") : nil
             let tail = next == nil || next!.incoming != m.incoming || next!.date - m.date > gap
             var status: String?
-            if m.box == 5 { status = String(localized: "Not Delivered") }
-            else if m.box == 4 || m.box == 6 { status = String(localized: "Sending…") }
-            else if m.id == lastMine && !m.incoming { status = String(localized: "Sent as Text Message") }
+            if m.box == 5 { status = L10n.string("Not Delivered") }
+            else if m.box == 4 || m.box == 6 { status = L10n.string("Sending…") }
+            else if m.id == lastMine && !m.incoming { status = L10n.string("Sent as Text Message") }
             out.append(Row(message: m, header: header, tail: tail, status: status, failed: m.box == 5))
         }
         return out
@@ -338,8 +338,8 @@ func transcriptTime(_ ms: Int64) -> String {
     let d = Date(millis: ms)
     let cal = Calendar.current
     let time = d.formatted(date: .omitted, time: .shortened)
-    if cal.isDateInToday(d) { return String(localized: "Today") + " " + time }
-    if cal.isDateInYesterday(d) { return String(localized: "Yesterday") + " " + time }
+    if cal.isDateInToday(d) { return L10n.string("Today") + " " + time }
+    if cal.isDateInYesterday(d) { return L10n.string("Yesterday") + " " + time }
     if let days = cal.dateComponents([.day], from: cal.startOfDay(for: d), to: cal.startOfDay(for: .now)).day, days < 7 {
         return d.formatted(.dateTime.weekday(.abbreviated)) + " " + time
     }
@@ -430,14 +430,14 @@ struct Bubble: View {
             if let n = phone {
                 Button("Call \(n)") { model.dial(n, sub: model.preferredSim(for: message.addr)) }
                 Button("Send message") { Router.shared.compose(to: n) }
-                Button("Copy") { UIPasteboard.general.string = n; model.flash(String(localized: "Copied")) }
+                Button("Copy") { UIPasteboard.general.string = n; model.flash(L10n.string("Copied")) }
             }
         }
     }
 
     private func copy(_ code: String) {
         UIPasteboard.general.string = code
-        model.flash(String(localized: "Code \(code) copied"))
+        model.flash(L10n.string("Code \(code) copied"))
     }
 
     private func handle(_ url: URL) -> OpenURLAction.Result {

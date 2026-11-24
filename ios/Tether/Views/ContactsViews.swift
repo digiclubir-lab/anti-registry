@@ -45,7 +45,7 @@ struct ContactsView: View {
                     Button { hideKeyboard(); adding = true } label: { Image(systemName: "plus") }.disabled(!model.linkState.isConnected)
                 }
             }
-            .sheet(isPresented: $adding) { AddContactView().environment(\.appModel, AppModel.shared).environment(\.router, Router.shared) }
+            .sheet(isPresented: $adding) { AddContactView().environment(\.appModel, AppModel.shared).environment(\.router, Router.shared).appLanguageEnvironment() }
         }
     }
 
@@ -166,7 +166,7 @@ struct ContactDetailView: View {
             }
         }
         .sheet(isPresented: $editing) {
-            EditContactView(contact: contact).environment(\.appModel, AppModel.shared).environment(\.router, Router.shared)
+            EditContactView(contact: contact).environment(\.appModel, AppModel.shared).environment(\.router, Router.shared).appLanguageEnvironment()
         }
     }
 

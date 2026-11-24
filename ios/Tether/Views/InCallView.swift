@@ -180,10 +180,10 @@ struct CallStatusText: View {
 
     private func status(at now: Date) -> String {
         switch call.state {
-        case "dialing", "connecting": String(localized: "calling…")
-        case "ringing": String(localized: "Incoming call")
-        case "holding": String(localized: "On hold")
-        case "ended": String(localized: "Call ended")
+        case "dialing", "connecting": L10n.string("calling…")
+        case "ringing": L10n.string("Incoming call")
+        case "holding": L10n.string("On hold")
+        case "ended": L10n.string("Call ended")
         default:
             if let t = call.connectedAt {
                 Duration.seconds(Int(now.timeIntervalSince(t))).formatted(.time(pattern: .minuteSecond))
@@ -217,8 +217,8 @@ struct AudioRouteMenu: View {
         Menu {
             ForEach(call.routes) { r in
                 Button { select(r.id) } label: {
-                    if r.id == call.selectedRoute { Label(r.id == RouteOption.speakerID ? String(localized: "Speaker") : r.name, systemImage: "checkmark") }
-                    else { Label(r.id == RouteOption.speakerID ? String(localized: "Speaker") : r.name, systemImage: Self.icon(r.kind)) }
+                    if r.id == call.selectedRoute { Label(r.id == RouteOption.speakerID ? L10n.string("Speaker") : r.name, systemImage: "checkmark") }
+                    else { Label(r.id == RouteOption.speakerID ? L10n.string("Speaker") : r.name, systemImage: Self.icon(r.kind)) }
                 }
             }
         } label: {

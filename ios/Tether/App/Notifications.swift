@@ -23,10 +23,10 @@ final class Notifications: NSObject, UNUserNotificationCenterDelegate {
 
     func setUp() {
         center.delegate = self
-        let reply = UNTextInputNotificationAction(identifier: Self.replyAction, title: String(localized: "Reply"),
-                                                  options: [], textInputButtonTitle: String(localized: "Send"),
-                                                  textInputPlaceholder: String(localized: "Message"))
-        let copy = UNNotificationAction(identifier: Self.copyAction, title: String(localized: "Copy code"), options: [])
+        let reply = UNTextInputNotificationAction(identifier: Self.replyAction, title: L10n.string("Reply"),
+                                                  options: [], textInputButtonTitle: L10n.string("Send"),
+                                                  textInputPlaceholder: L10n.string("Message"))
+        let copy = UNNotificationAction(identifier: Self.copyAction, title: L10n.string("Copy code"), options: [])
         center.setNotificationCategories([
             UNNotificationCategory(identifier: Self.smsCategory, actions: [reply], intentIdentifiers: []),
             UNNotificationCategory(identifier: Self.otpCategory, actions: [copy, reply], intentIdentifiers: []),
@@ -92,7 +92,7 @@ final class Notifications: NSObject, UNUserNotificationCenterDelegate {
     /// "Missed Call" from a name or number, with the SIM (two SIMs only), as Phone shows it.
     func showMissedCall(_ c: CallEntry, from name: String, sim: String?) {
         let content = UNMutableNotificationContent()
-        content.title = String(localized: "Missed Call")
+        content.title = L10n.string("Missed Call")
         content.body = [name, sim].compactMap { $0 }.joined(separator: " · ")
         content.sound = .default
         content.threadIdentifier = "missed-calls"
