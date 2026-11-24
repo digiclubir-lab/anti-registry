@@ -515,6 +515,8 @@ struct ComposeView: View {
     @State private var to = ""
     @State private var text = ""
     @State private var sub: Int?
+    /// Set once the user picks a SIM in this sheet; until then the SIM follows the recipient's remembered one.
+    @State private var subTouched = false
     private enum Field { case to, message }
     @FocusState private var field: Field?
 
@@ -538,7 +540,10 @@ struct ComposeView: View {
                 }
                 Section {
                     TextField("Message", text: $text, axis: .vertical).lineLimit(3...8).focused($field, equals: .message)
-                    SimPicker(sub: $sub)
+                    SimPicker(sub: Binding(get: { sub }, set: { sub = $0; subTouched = true
+                        // Remember the choice for this conversation, as the thread composer does — once the
+                        // recipient is a number (a half-typed name has no key to store it under).
+                        if !PhoneNumber.matchKey(to).isEmpty { model.setPreferredSim($0, for: to) } }))
                 }
             }
             .scrollDismissesKeyboard(.interactively)
@@ -556,10 +561,14 @@ struct ComposeView: View {
                 }
             }
             .onAppear {
-                sub = model.status?.defaultSub
                 if to.isEmpty { to = initialTo }
+                // Open on the conversation's remembered SIM (the phone's default when none was chosen),
+                // not always the phone's default.
+                sub = model.preferredSim(for: to)
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { field = to.isEmpty ? .to : .message }
             }
+            // Follow the recipient (e.g. a tapped suggestion) until the user picks a SIM themselves.
+            .onChangeCompat(of: to) { _ in if !subTouched { sub = model.preferredSim(for: to) } }
         }
     }
 

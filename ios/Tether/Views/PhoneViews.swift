@@ -52,6 +52,14 @@ struct RecentsView: View {
                 }
                 .contextMenu {
                     Button { model.dial(e.num, sub: e.sub) } label: { Label("Call", systemImage: "phone") }
+                    // With two SIMs, the other line is one long-press away; the row itself always calls back on its own SIM.
+                    if model.sims.count > 1 {
+                        ForEach(model.sims.filter { $0.sub != e.sub }) { sim in
+                            if let name = model.simName(sim.sub) {
+                                Button { model.dial(e.num, sub: sim.sub) } label: { Label("Call with \(name)", systemImage: "phone") }
+                            }
+                        }
+                    }
                     Button { message(e.num) } label: { Label("Message", systemImage: "message") }
                     Button { UIPasteboard.general.string = e.num } label: { Label("Copy", systemImage: "doc.on.doc") }
                     if model.isBlocked(e.num) {
@@ -202,9 +210,20 @@ struct KeypadView: View {
             .environment(\.layoutDirection, .leftToRight)
             HStack(spacing: 26) {
                 Color.clear.frame(width: 80, height: 80)
-                Button { model.dial(number, sub: nil) } label: {
+                Button { model.dial(number, sub: model.preferredSim(for: number)) } label: {
                     Image(systemName: "phone.fill").font(.system(size: 30)).foregroundStyle(.white).accessibilityLabel(Text("Call"))
                         .frame(width: 80, height: 80).background(.green, in: Circle())
+                }
+                // Long-press picks the line for this one call; a plain tap uses the number's remembered SIM
+                // (the phone's default when none was chosen), as everywhere else in the app.
+                .contextMenu {
+                    if model.sims.count > 1 {
+                        ForEach(model.sims) { sim in
+                            if let name = model.simName(sim.sub) {
+                                Button { model.dial(number, sub: sim.sub) } label: { Label("Call with \(name)", systemImage: "simcard") }
+                            }
+                        }
+                    }
                 }
                 .disabled(number.isEmpty || !model.linkState.isConnected)
                 Button { if !number.isEmpty { number.removeLast() } } label: {
