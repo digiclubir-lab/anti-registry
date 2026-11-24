@@ -129,13 +129,15 @@ final class Notifications: NSObject, UNUserNotificationCenterDelegate {
             UIPasteboard.general.string = info["code"] as? String
         case Self.replyAction:
             if let text = (response as? UNTextInputNotificationResponse)?.userText, let addr = info["addr"] as? String {
-                let sub = (info["sub"] as? Int).flatMap { $0 >= 0 ? $0 : nil }
                 Task { @MainActor in
-                    AppModel.shared.sendSms(to: addr, body: text, sub: sub)
+                    let model = AppModel.shared
+                    // Exactly the composer's send, SIM included: the conversation's remembered
+                    // SIM (preferredSim), not whichever SIM the incoming text arrived on.
+                    model.sendSms(to: addr, body: text, sub: model.preferredSim(for: addr))
                     // Replying means it was read (as in Messages).
-                    if let thread = info["thread"] as? Int64 { AppModel.shared.markRead(thread: thread) }
+                    if let thread = info["thread"] as? Int64 { model.markRead(thread: thread) }
                     // On disk before iOS may suspend us: the outbox survives even if the app is then killed.
-                    AppModel.shared.persistNow()
+                    model.persistNow()
                     completionHandler()
                 }
                 return
