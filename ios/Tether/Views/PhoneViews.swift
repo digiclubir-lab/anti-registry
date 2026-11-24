@@ -182,7 +182,7 @@ struct KeypadView: View {
                 ForEach(keys.indices, id: \.self) { r in
                     HStack(spacing: 26) {
                         ForEach(keys[r], id: \.0) { k in
-                            Button { if k.0 == "0" && longPressedZero { longPressedZero = false } else { longPressedZero = false; number.append(k.0) } } label: {
+                            Button { Sounds.dtmf(k.0); if k.0 == "0" && longPressedZero { longPressedZero = false } else { longPressedZero = false; number.append(k.0) } } label: {
                                 VStack(spacing: 1) {
                                     Text(k.0).font(.system(size: 34, weight: .light))
                                     if !k.1.isEmpty {

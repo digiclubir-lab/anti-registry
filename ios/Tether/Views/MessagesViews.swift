@@ -333,16 +333,19 @@ struct ThreadView: View {
 }
 
 /// "Today 13:20" / "Yesterday 09:05" / "Mon 13:20" / "12 Nov 2026 at 13:20", as Messages writes it.
+/// The date part renders in the effective language's calendar (Jalali in Persian mode);
+/// the clock time is formatted as before.
 func transcriptTime(_ ms: Int64) -> String {
     let d = Date(millis: ms)
-    let cal = Calendar.current
+    let language = LanguageSettings.shared.language
+    let cal = language.calendar
     let time = d.formatted(date: .omitted, time: .shortened)
     if cal.isDateInToday(d) { return L10n.string("Today") + " " + time }
     if cal.isDateInYesterday(d) { return L10n.string("Yesterday") + " " + time }
     if let days = cal.dateComponents([.day], from: cal.startOfDay(for: d), to: cal.startOfDay(for: .now)).day, days < 7 {
-        return d.formatted(.dateTime.weekday(.abbreviated)) + " " + time
+        return d.formatted(.dateTime.weekday(.abbreviated).locale(language.locale).calendar(cal)) + " " + time
     }
-    return d.formatted(.dateTime.day().month(.abbreviated).year()) + " " + time
+    return d.formatted(.dateTime.day().month(.abbreviated).year().locale(language.locale).calendar(cal)) + " " + time
 }
 
 /// Message bubble outline: a rounded rectangle, with the small tail Messages draws on the last bubble of a run.
@@ -468,7 +471,7 @@ struct Bubble: View {
         }
         Divider()
         Button(role: .destructive) { hideKeyboard(); confirmDelete = true } label: { Label("Delete", systemImage: "trash") }
-        Text(Date(millis: message.date).formatted(date: .abbreviated, time: .shortened))
+        Text(fullTime(message.date))
     }
 }
 

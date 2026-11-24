@@ -11,6 +11,15 @@ enum AppLanguage: String, CaseIterable, Identifiable {
     var locale: Locale { Locale(identifier: self == .persian ? "fa_IR" : "en_US") }
     var layoutDirection: LayoutDirection { self == .persian ? .rightToLeft : .leftToRight }
 
+    /// The calendar dates are rendered in while this language runs: the Persian (Shamsi)
+    /// calendar for Persian, Gregorian for English. Day boundaries are the local midnights
+    /// in both, so Today/Yesterday pick out the same days — only the numbering differs.
+    var calendar: Calendar {
+        var calendar = Calendar(identifier: self == .persian ? .persian : .gregorian)
+        calendar.locale = locale
+        return calendar
+    }
+
     /// The .lproj bundle holding this language's strings (the lookup keys are the English texts).
     var bundle: Bundle {
         if let path = Bundle.main.path(forResource: rawValue, ofType: "lproj"), let bundle = Bundle(path: path) { return bundle }

@@ -213,11 +213,24 @@ extension Date {
     init(millis: Int64) { self.init(timeIntervalSince1970: Double(millis) / 1000) }
 }
 
+/// Dates render in the effective in-app language's calendar (Jalali in Persian mode,
+/// Gregorian in English); the helpers below read the language at render time, and the
+/// root view's rebuild on a language switch re-renders them. Clock times are untouched —
+/// only the calendar and the date's own formatting follow the language.
 func shortTime(_ ms: Int64) -> String {
     let d = Date(millis: ms)
-    if Calendar.current.isDateInToday(d) { return d.formatted(date: .omitted, time: .shortened) }
-    if Calendar.current.isDateInYesterday(d) { return L10n.string("Yesterday") }
-    return d.formatted(.dateTime.day().month(.abbreviated))
+    let language = LanguageSettings.shared.language
+    let cal = language.calendar
+    if cal.isDateInToday(d) { return d.formatted(date: .omitted, time: .shortened) }
+    if cal.isDateInYesterday(d) { return L10n.string("Yesterday") }
+    return d.formatted(.dateTime.day().month(.abbreviated).locale(language.locale).calendar(cal))
+}
+
+/// "24 Nov 2026, 13:20" — full date + time in the effective language's calendar.
+func fullTime(_ ms: Int64) -> String {
+    let language = LanguageSettings.shared.language
+    return Date(millis: ms).formatted(Date.FormatStyle(date: .abbreviated, time: .shortened,
+                                                       locale: language.locale, calendar: language.calendar))
 }
 
 

@@ -309,7 +309,7 @@ struct ContactDetailView: View {
                     VStack(alignment: .leading, spacing: 1) {
                         Text(historyLabel(e))
                             .foregroundStyle(e.type == 3 || e.type == 5 ? Color.red : Color.primary)
-                        Text(Date(millis: e.date).formatted(date: .abbreviated, time: .shortened))
+                        Text(fullTime(e.date))
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }

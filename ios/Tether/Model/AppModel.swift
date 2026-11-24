@@ -419,6 +419,9 @@ final class AppModel {
         let thread = thread(for: to) ?? -Int64(abs(PhoneNumber.matchKey(to).hashValue % 1_000_000))
         let placeholder = Sms(id: localId, thread: thread, addr: to, body: text, date: now, box: 4, read: true, sub: sub)
         data.sms.append(placeholder)
+        // The sent sound, as in Messages — only for a send tapped out in the foreground
+        // (a notification quick reply while the app is behind stays silent).
+        if appActive { Sounds.messageSent() }
         setDraft("", for: to)
         if linkState.isConnected {
             let id = link.send(MsgType.smsSend, SmsSend(to: to, body: text, sub: sub), expectReply: true)
@@ -682,7 +685,7 @@ final class AppModel {
                 if (data.sms.count, data.recents.count) != before { persist() }
             case MsgType.smsNew:
                 let b = try Control.body(SmsNew.self, from: payload)
-                merge(sms: [b.item], notify: b.item.incoming)
+                merge(sms: [b.item], notify: b.item.incoming, live: b.item.incoming)
             case MsgType.smsResult:
                 let r = try Control.body(SmsResult.self, from: payload)
                 if let re = h.re, let p = pendingSms[re] {
@@ -801,7 +804,10 @@ final class AppModel {
     /// id → position in `data.sms`, so a sync page is merged in O(page) rather than O(all messages).
     @PerceptionIgnored private var smsIndex: [Int64: Int] = [:]
 
-    private func merge(sms: [Sms], notify: Bool) {
+    /// `live` marks a text that has just arrived on its own (sms.new), as opposed to a sync
+    /// page: only a live arrival may make the received-message sound, so refilling history
+    /// stays silent no matter how many old texts it brings.
+    private func merge(sms: [Sms], notify: Bool, live: Bool = false) {
         guard !sms.isEmpty else { return }
         var arr = data.sms
         if smsIndex.count != arr.count { smsIndex = Dictionary(arr.enumerated().map { ($1.id, $0) }, uniquingKeysWith: { a, _ in a }) }
@@ -827,6 +833,9 @@ final class AppModel {
         data.sms = arr
         if smsIndex.isEmpty { smsIndex = Dictionary(arr.enumerated().map { ($1.id, $0) }, uniquingKeysWith: { a, _ in a }) }
         persist()
+        // The received sound, as in Messages: a genuinely new incoming text (fresh, not a
+        // re-announced row) while the app is in front. One sound per live arrival.
+        if live && appActive && fresh.contains(where: { $0.incoming }) { Sounds.messageReceived() }
         if notify {
             // Only texts that are still unread and recent: a reconnect must not replay old or already-read ones.
             let recent = Int64(Date().addingTimeInterval(-6 * 3600).timeIntervalSince1970 * 1000)
