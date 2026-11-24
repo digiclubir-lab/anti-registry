@@ -224,7 +224,9 @@ func shortTime(_ ms: Int64) -> String {
     let cal = language.calendar
     if cal.isDateInToday(d) { return d.formatted(date: .omitted, time: .shortened) }
     if cal.isDateInYesterday(d) { return L10n.string("Yesterday") }
-    return d.formatted(.dateTime.day().month(.abbreviated).locale(language.locale).calendar(cal))
+    var style = Date.FormatStyle.dateTime.day().month(.abbreviated).locale(language.locale)
+    style.calendar = cal
+    return d.formatted(style)
 }
 
 /// "24 Nov 2026, 13:20" — full date + time in the effective language's calendar.

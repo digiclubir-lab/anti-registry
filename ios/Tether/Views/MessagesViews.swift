@@ -369,9 +369,13 @@ func transcriptTime(_ ms: Int64) -> String {
     if cal.isDateInToday(d) { return L10n.string("Today") + " " + time }
     if cal.isDateInYesterday(d) { return L10n.string("Yesterday") + " " + time }
     if let days = cal.dateComponents([.day], from: cal.startOfDay(for: d), to: cal.startOfDay(for: .now)).day, days < 7 {
-        return d.formatted(.dateTime.weekday(.abbreviated).locale(language.locale).calendar(cal)) + " " + time
+        var weekdayStyle = Date.FormatStyle.dateTime.weekday(.abbreviated).locale(language.locale)
+        weekdayStyle.calendar = cal
+        return d.formatted(weekdayStyle) + " " + time
     }
-    return d.formatted(.dateTime.day().month(.abbreviated).year().locale(language.locale).calendar(cal)) + " " + time
+    var fullStyle = Date.FormatStyle.dateTime.day().month(.abbreviated).year().locale(language.locale)
+    fullStyle.calendar = cal
+    return d.formatted(fullStyle) + " " + time
 }
 
 /// Message bubble outline: a rounded rectangle, with the small tail Messages draws on the last bubble of a run.
