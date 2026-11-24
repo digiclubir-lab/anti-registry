@@ -38,15 +38,25 @@ struct MessagesView: View {
                     let hits = searchHits
                     if hits.isEmpty { Text("No results").foregroundStyle(.secondary) }
                     ForEach(hits) { m in
-                        NavigationLink(value: m.thread) {
+                        Button {
+                            router.scrollToMessage = m.id
+                            path.append(m.thread)
+                        } label: {
                             HStack(spacing: 10) {
                                 Avatar(name: model.displayName(m.addr), photo: model.photo(for: m.addr), size: 40)
                                 VStack(alignment: .leading, spacing: 2) {
-                                    Text(model.displayName(m.addr)).font(.subheadline.weight(.semibold))
+                                    HStack(alignment: .firstTextBaseline) {
+                                        Text(model.displayName(m.addr)).font(.subheadline.weight(.semibold)).lineLimit(1)
+                                        Spacer()
+                                        Text(shortTime(m.date)).font(.caption).foregroundStyle(.secondary)
+                                    }
                                     Text(MessageText.plain(m.body)).font(.subheadline).foregroundStyle(.secondary).lineLimit(2)
                                 }
                             }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .contentShape(Rectangle())
                         }
+                        .buttonStyle(.plain)
                     }
                 } else {
                     ForEach(model.conversations) { c in
@@ -166,11 +176,14 @@ struct ConversationRow: View {
 
 struct ThreadView: View {
     @Environment(\.appModel) private var model
+    @Environment(\.router) private var router
     let thread: Int64
     @State private var text = ""
     @State private var sub: Int?
     @State private var confirmDelete = false
     @State private var confirmBlock = false
+    /// The message a search result landed on: flashed behind the bubble for a few seconds.
+    @State private var highlightedID: Int64?
     @Environment(\.dismiss) private var dismiss
     @FocusState private var focused: Bool
 
@@ -205,6 +218,18 @@ struct ThreadView: View {
         return out
     }
 
+    /// A search result asked for one message of this thread: scroll to it (the transcript opens
+    /// bottom-anchored, so give it a beat to lay out first) and flash it behind the bubble.
+    private func consumeScrollTarget(_ proxy: ScrollViewProxy, msgs: [Sms]) {
+        guard let target = router.scrollToMessage, msgs.contains(where: { $0.id == target }) else { return }
+        router.scrollToMessage = nil
+        highlightedID = target
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            withAnimation { proxy.scrollTo(target, anchor: .center) }
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.4) { highlightedID = nil }
+    }
+
     var body: some View { WithPerceptionTracking { bodyContent } }
 
     @ViewBuilder private var bodyContent: some View {
@@ -218,7 +243,7 @@ struct ThreadView: View {
                             Text(h).font(.caption2.weight(.medium)).foregroundStyle(.secondary)
                                 .padding(.top, 14).padding(.bottom, 6)
                         }
-                        Bubble(message: r.message, tail: r.tail)
+                        Bubble(message: r.message, tail: r.tail, highlighted: r.message.id == highlightedID)
                             .padding(.bottom, r.tail ? 8 : 2)
                             .id(r.message.id)
                         if let st = r.status {
@@ -233,6 +258,7 @@ struct ThreadView: View {
             }
             .bottomAnchoredCompat(proxy, last: msgs.last?.id)
             .scrollDismissesKeyboard(.interactively)
+            .onAppear { consumeScrollTarget(proxy, msgs: msgs) }
             .onChangeCompat(of: msgs.count) { _ in
                 if let last = msgs.last { withAnimation { proxy.scrollTo(last.id, anchor: .bottom) } }
                 if model.appActive { model.markRead(thread: thread) }
@@ -380,6 +406,8 @@ struct Bubble: View {
     @Environment(\.appModel) private var model
     let message: Sms
     var tail = true
+    /// A soft accent band behind the bubble: the message a search result landed on.
+    var highlighted = false
     @State private var phone: String?
     @State private var confirmDelete = false
 
@@ -422,6 +450,11 @@ struct Bubble: View {
             }
         }
         .padding(.horizontal, 4)
+        .background {
+            RoundedRectangle(cornerRadius: 14)
+                .fill(Color("AccentColor").opacity(highlighted ? 0.20 : 0))
+                .animation(.easeInOut(duration: 0.45), value: highlighted)
+        }
         .confirmationDialog("Delete Message", isPresented: $confirmDelete, titleVisibility: .visible) {
             Button("Delete Message", role: .destructive) { model.deleteMessages([message.id]) }
         } message: {

@@ -39,6 +39,9 @@ final class Router {
     static let shared = Router()
     var tab: Tab = .messages
     var openThread: Int64?
+    /// A message a search result asked to land on: when its conversation opens, the thread
+    /// scrolls to it and flashes it, then clears this.
+    var scrollToMessage: Int64?
 
     enum Tab: Hashable { case recents, contacts, keypad, messages, settings }
 
